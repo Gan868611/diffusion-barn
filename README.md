@@ -3,8 +3,10 @@
   </p>
 
 --------------------------------------------------------------------------------
+# MLDA@EEE NTU
+This is the repository for the proposed solution of MLDA@EEE from Nanyang Technological University, Singapore
 
-# ICRA 2022 BARN Challenge
+# ICRA 2023 BARN Challenge
 
 ## Requirements
 If you run it on a local machine without containers:
