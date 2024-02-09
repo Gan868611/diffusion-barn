@@ -6,7 +6,7 @@
 # MLDA@EEE NTU
 This is the repository for the proposed solution of MLDA@EEE from Nanyang Technological University, Singapore
 
-# ICRA 2023 BARN Challenge
+# ICRA 2024 BARN Challenge Instruction
 
 ## Requirements
 If you run it on a local machine without containers:
