@@ -39,4 +39,6 @@
 
   <node pkg="jackal_helper" type="collision_publisher_node" name="collision_publisher_node" />
 
+  <!-- Open RVIZ -->
+  <node type="rviz" name="rviz" pkg="rviz" args="-d $(find jackal_helper)/launch/config_file.rviz" />
 </launch>

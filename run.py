@@ -48,13 +48,7 @@ if __name__ == "__main__":
     
     launch_file = join(base_path, 'launch', 'gazebo_launch.launch')
     world_name = join(base_path, "worlds", world_name)
-    
-    gazebo_process = subprocess.Popen([
-        'roslaunch',
-        launch_file,
-        'world_name:=' + world_name,
-        'gui:=' + ("true" if args.gui else "false")
-    ])
+    pytho
     time.sleep(5)  # sleep to wait until the gazebo being created
     
     rospy.init_node('gym', anonymous=True) #, log_level=rospy.FATAL)

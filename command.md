@@ -1,0 +1,1 @@
+python3 /home/mlda/jackal_ws/src/the-barn-challenge/run.py --world_idx 0 --gui
