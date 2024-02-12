@@ -41,4 +41,5 @@
 
   <!-- Open RVIZ -->
   <node type="rviz" name="rviz" pkg="rviz" args="-d $(find jackal_helper)/launch/config_file.rviz" />
+  <node type="rqt_gui" name="rqt_gui" pkg="rqt_gui"/>
 </launch>

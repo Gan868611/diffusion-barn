@@ -31,8 +31,15 @@ if __name__ == "__main__":
     parser.add_argument('--world_idx', type=int, default=0)
     parser.add_argument('--gui', action="store_true")
     parser.add_argument('--out', type=str, default="out.txt")
+    parser.add_argument('--type',type=str, default="dwa")
     args = parser.parse_args()
     
+    planner_type = args.type
+    if planner_type == "eband":
+        planner_type = "eband"
+    else:
+        planner_type = "DWA"
+
     ##########################################################################################
     ## 0. Launch Gazebo Simulation
     ##########################################################################################
@@ -42,7 +49,8 @@ if __name__ == "__main__":
     os.environ["JACKAL_LASER_OFFSET"] = "-0.065 0 0.01"
     
     world_name = "BARN/world_%d.world" %(args.world_idx)
-    print(">>>>>>>>>>>>>>>>>> Loading Gazebo Simulation with %s <<<<<<<<<<<<<<<<<<" %(world_name))   
+    print(">>>>>>>>>>>>>>>>>> Loading Gazebo Simulation with {} using {} <<<<<<<<<<<<<<<<<<".format(world_name,planner_type))
+    time.sleep(1)   
     rospack = rospkg.RosPack()
     base_path = rospack.get_path('jackal_helper')
     
@@ -85,7 +93,10 @@ if __name__ == "__main__":
     ## (Customize this block to add your own navigation stack)
     ##########################################################################################
     
-    launch_file = join(base_path, '..', 'jackal_helper/launch/move_base_DWA.launch')
+    
+
+
+    launch_file = join(base_path, '..', 'jackal_helper/launch/move_base_{}.launch'.format(planner_type))
     nav_stack_process = subprocess.Popen([
         'roslaunch',
         launch_file,
