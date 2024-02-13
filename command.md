@@ -1,7 +1,10 @@
+# Shell
+```shell
 python3 /home/mlda/jackal_ws/src/the-barn-challenge/run.py --world_idx 0 --gui
-
+```
 
 # Docker
+```shell
 docker build . -t barn:latest
 
 docker run --rm -dt --name barn \
@@ -12,3 +15,4 @@ docker run --rm -dt --name barn \
 	-e NVIDIA_DRIVER_CAPABILITIES=all \
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
 	barn:latest
+```
