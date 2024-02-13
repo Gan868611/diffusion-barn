@@ -1,6 +1,6 @@
 # Shell
 ```shell
-python3 /home/mlda/jackal_ws/src/the-barn-challenge/run.py --world_idx 0 --gui
+python3 /home/mlda/jackal_ws/src/mlda-barn-2024/run.py --world_idx 0 --gui --type eband
 ```
 
 # Docker
