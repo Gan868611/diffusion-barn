@@ -41,5 +41,6 @@
 
   <!-- Open RVIZ -->
   <node type="rviz" name="rviz" pkg="rviz" args="-d $(find jackal_helper)/launch/config_file.rviz" />
+  <node type="teleop_twist_keyboard.py" name="teleop" pkg="teleop_twist_keyboard"/>
 
 </launch>

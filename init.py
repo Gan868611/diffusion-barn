@@ -37,7 +37,7 @@ if __name__ == "__main__":
     planner_type = args.type
     if planner_type == "eband":
         planner_type = "eband"
-    elif planner_type == "kul":
+    if planner_type == "kul":
         planner_type = "motion_tube"
     else:
         planner_type = "DWA"
@@ -117,8 +117,7 @@ if __name__ == "__main__":
     mb_goal.target_pose.pose.position.z = 0
     mb_goal.target_pose.pose.orientation = Quaternion(0, 0, 0, 1)
 
-    nav_as.wait_for_server()
-    nav_as.send_goal(mb_goal)
+
 
 
 
