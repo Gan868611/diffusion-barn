@@ -37,6 +37,8 @@ if __name__ == "__main__":
     planner_type = args.type
     if planner_type == "eband":
         planner_type = "eband"
+    if planner_type == "kul":
+        planner_type = "motion_tube"
     else:
         planner_type = "DWA"
 
@@ -49,7 +51,7 @@ if __name__ == "__main__":
     os.environ["JACKAL_LASER_OFFSET"] = "-0.065 0 0.01"
     
     world_name = "BARN/world_%d.world" %(args.world_idx)
-    print(">>>>>>>>>>>>>>>>>> Loading Gazebo Simulation with {} using {} <<<<<<<<<<<<<<<<<<".format(world_name,planner_type))
+    print(">>>>>>>>>>>>>>>>>> Gazebo of World {} using {} <<<<<<<<<<<<<<<<<<".format(world_name,planner_type))
     time.sleep(1)   
     rospack = rospkg.RosPack()
     base_path = rospack.get_path('jackal_helper')
