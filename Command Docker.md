@@ -13,7 +13,18 @@ docker run --rm -dt --name barn \
 	-e NVIDIA_DRIVER_CAPABILITIES=all \
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
 	barn:latest
+
+docker push mldarobotics/barn2024
+
 ```
+
+## Tag and push to DockerHub
+
+```
+docker tag barn:kul mldarobotics/barn2024:kul
+docker push mldarobotics/barn2024:kul
+```
+
 
 ## Pull from the DockerHub
 ```shell

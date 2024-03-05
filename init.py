@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
     ##########################################################################################
     ## 2. Start navigation
-    ##########################################################################################
+    ##########################################>################################################
     
     curr_time = rospy.get_time()
     pos = gazebo_sim.get_model_state().pose.position
@@ -158,35 +158,37 @@ if __name__ == "__main__":
     ## 3. Report metrics and generate log
     ##########################################################################################
     
-    print(">>>>>>>>>>>>>>>>>> Test finished! <<<<<<<<<<<<<<<<<<")
-    success = False
-    if collided:
-        status = "collided"
-    elif curr_time - start_time >= 100:
-        status = "timeout"
-    else:
-        status = "succeeded"
-        success = True
-    print("Navigation %s with time %.4f (s)" %(status, curr_time - start_time))
+    # print(">>>>>>>>>>>>>>>>>> Test finished! <<<<<<<<<<<<<<<<<<")
+    # success = False
+    # if collided:
+    #     status = "collided"
+    # elif curr_time - start_time >= 100:
+    #     status = "timeout"
+    # else:
+    #     status = "succeeded"
+    #     success = True
+    # print("Navigation %s with time %.4f (s)" %(status, curr_time - start_time))
     
-    path_file_name = join(base_path, "worlds/BARN/path_files", "path_%d.npy" %args.world_idx)
-    path_array = np.load(path_file_name)
-    path_array = [path_coord_to_gazebo_coord(*p) for p in path_array]
-    path_array = np.insert(path_array, 0, (INIT_POSITION[0], INIT_POSITION[1]), axis=0)
-    path_array = np.insert(path_array, len(path_array), (INIT_POSITION[0] + GOAL_POSITION[0], INIT_POSITION[1] + GOAL_POSITION[1]), axis=0)
-    path_length = 0
-    for p1, p2 in zip(path_array[:-1], path_array[1:]):
-        path_length += compute_distance(p1, p2)
+    # path_file_name = join(base_path, "worlds/BARN/path_files", "path_%d.npy" %args.world_idx)
+    # path_array = np.load(path_file_name)
+    # path_array = [path_coord_to_gazebo_coord(*p) for p in path_array]
+    # path_array = np.insert(path_array, 0, (INIT_POSITION[0], INIT_POSITION[1]), axis=0)
+    # path_array = np.insert(path_array, len(path_array), (INIT_POSITION[0] + GOAL_POSITION[0], INIT_POSITION[1] + GOAL_POSITION[1]), axis=0)
+    # path_length = 0
+    # for p1, p2 in zip(path_array[:-1], path_array[1:]):
+    #     path_length += compute_distance(p1, p2)
     
-    # Navigation metric: 1_success *  optimal_time / clip(actual_time, 4 * optimal_time, 8 * optimal_time)
-    optimal_time = path_length / 2
-    actual_time = curr_time - start_time
-    nav_metric = int(success) * optimal_time / np.clip(actual_time, 4 * optimal_time, 8 * optimal_time)
-    print("Navigation metric: %.4f" %(nav_metric))
+    # # Navigation metric: 1_success *  optimal_time / clip(actual_time, 4 * optimal_time, 8 * optimal_time)
+    # optimal_time = path_length / 2
+    # actual_time = curr_time - start_time
+    # nav_metric = int(success) * optimal_time / np.clip(actual_time, 4 * optimal_time, 8 * optimal_time)
+    # print("Navigation metric: %.4f" %(nav_metric))
     
-    with open(args.out, "a") as f:
-        f.write("%d %d %d %d %.4f %.4f\n" %(args.world_idx, success, collided, (curr_time - start_time)>=100, curr_time - start_time, nav_metric))
+    # with open(args.out, "a") as f:
+    #     f.write("%d %d %d %d %.4f %.4f\n" %(args.world_idx, success, collided, (curr_time - start_time)>=100, curr_time - start_time, nav_metric))
     
+    while(input("Press q/Q to quit").lower() != "q"):
+        pass
     gazebo_process.terminate()
     gazebo_process.wait()
     nav_stack_process.terminate()

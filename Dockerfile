@@ -10,6 +10,7 @@ RUN git clone https://github.com/jackal/jackal.git --branch melodic-devel
 RUN git clone https://github.com/jackal/jackal_simulator.git --branch melodic-devel
 RUN git clone https://github.com/jackal/jackal_desktop.git --branch melodic-devel
 RUN git clone https://github.com/utexas-bwi/eband_local_planner.git
+RUN git clone https://gitlab.kuleuven.be/u0144428/free_space_motion_tube.git -b barn2023
 
 RUN apt-get update && apt-get install -y python3-pip build-essential
 RUN pip3 install defusedxml rospkg netifaces numpy
@@ -32,4 +33,6 @@ RUN echo "else" >> ~/.bashrc
 RUN echo "  source /jackal_ws/devel/setup.bash;" >> ~/.bashrc
 RUN echo "fi" >> ~/.bashrc
 RUN echo "alias python=python3" >> ~/.bashrc
+RUN echo "cd /jackal_ws/src/" >> ~/.bashrc
+
 
