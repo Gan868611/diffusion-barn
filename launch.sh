@@ -1,4 +1,4 @@
-export SRC_DIR="$(pwd)/mlda_algo"
+export SRC_DIR="$(pwd)"
 echo $SRC_DIR:/jackal_ws/src/mlda_algo
 
 xhost +
@@ -19,6 +19,5 @@ docker run --rm -dit --name barn \
 	-e LIBGL_ALWAYS_SOFTWARE=1 \
 	-e NVIDIA_DRIVER_CAPABILITIES=all \
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
-    -v $SRC_DIR:/jackal_ws/src/mlda-barn-2024/mlda_algo \
-    -w /jackal_ws/src/mlda-barn-2024 \
+    -v $SRC_DIR:/jackal_ws/src/mlda-barn-2024/ \
 	$IMAGE_NAME
