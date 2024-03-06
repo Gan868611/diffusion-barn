@@ -8,6 +8,7 @@ import numpy as np
 import rospy
 import rospkg
 
+
 from gazebo_simulation import GazeboSimulation
 
 INIT_POSITION = [-2, 3, 1.57]  # in world frame
@@ -32,6 +33,7 @@ if __name__ == "__main__":
     parser.add_argument('--gui', action="store_true")
     parser.add_argument('--out', type=str, default="out.txt")
     parser.add_argument('--type',type=str, default="dwa")
+    parser.add_argument('--rviz', action="store_true")
     args = parser.parse_args()
     
     planner_type = args.type
@@ -88,6 +90,14 @@ if __name__ == "__main__":
         time.sleep(1)
 
 
+
+    if args.rviz == True:
+        ## Open RVIz
+        rviz_launch = join(base_path, '..', 'jackal_helper/launch/rviz_launch.launch')
+        rviz_launch_process = subprocess.Popen([
+            'roslaunch',
+            rviz_launch,
+        ])
 
 
     ##########################################################################################
@@ -193,3 +203,7 @@ if __name__ == "__main__":
     gazebo_process.wait()
     nav_stack_process.terminate()
     nav_stack_process.wait()
+
+    if args.rviz == True:
+        rviz_launch_process.terminate()
+        rviz_launch_process.wait()

@@ -30,10 +30,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'test BARN navigation challenge')
     parser.add_argument('--world_idx', type=int, default=0)
     parser.add_argument('--gui', action="store_true")
-    parser.add_argument('--out', type=str, default="out.txt")
+    parser.add_argument('--out', type=str, default="out.csv")
     parser.add_argument('--type',type=str, default="dwa")
+    parser.add_argument('--rviz', action="store_true")
     args = parser.parse_args()
     
+    
+    ## Get the planner type
     planner_type = args.type
     if planner_type == "eband":
         planner_type = "eband"
@@ -69,6 +72,8 @@ if __name__ == "__main__":
     rospy.init_node('gym', anonymous=True) #, log_level=rospy.FATAL)
     rospy.set_param('/use_sim_time', True)
     
+    
+
     # GazeboSimulation provides useful interface to communicate with gazebo  
     gazebo_sim = GazeboSimulation(init_position=INIT_POSITION)
     
@@ -88,6 +93,13 @@ if __name__ == "__main__":
         time.sleep(1)
 
 
+    if args.rviz == True:
+        ## Open RVIz
+        rviz_launch = join(base_path, '..', 'jackal_helper/launch/rviz_launch.launch')
+        rviz_launch_process = subprocess.Popen([
+            'roslaunch',
+            rviz_launch,
+        ])
 
 
     ##########################################################################################
@@ -147,14 +159,14 @@ if __name__ == "__main__":
         curr_time = rospy.get_time()
         pos = gazebo_sim.get_model_state().pose.position
         curr_coor = (pos.x, pos.y)
-        print("Time: %.2f (s), x: %.2f (m), y: %.2f (m)" %(curr_time - start_time, *curr_coor), end="\r")
+        duration = curr_time - start_time
+        # rospy.loginfo(f'Time: {duration}')
+        print("Time: %.2f (s), x: %.2f (m), y: %.2f (m)" %(curr_time - start_time, pos.x,pos.y))
         collided = gazebo_sim.get_hard_collision()
         while rospy.get_time() - curr_time < 0.1:
             time.sleep(0.01)
 
 
-    
-    
     ##########################################################################################
     ## 3. Report metrics and generate log
     ##########################################################################################
@@ -185,10 +197,16 @@ if __name__ == "__main__":
     nav_metric = int(success) * optimal_time / np.clip(actual_time, 4 * optimal_time, 8 * optimal_time)
     print("Navigation metric: %.4f" %(nav_metric))
     
+    timeout = (curr_time - start_time)>=100
+    duration = curr_time - start_time
     with open(args.out, "a") as f:
-        f.write("%d %d %d %d %.4f %.4f\n" %(args.world_idx, success, collided, (curr_time - start_time)>=100, curr_time - start_time, nav_metric))
-    
+        f.write("%d %d %d %d %.4f %.4f\n" %(args.world_idx, success, collided, timeout, duration, nav_metric))
+        # f.write(f"{args.world_idx}, {success}, {collided}, {timeout}, {duration}, {nav_metric}")
+    if args.rviz == True:
+        rviz_launch_process.terminate()
+        rviz_launch_process.wait()
     gazebo_process.terminate()
-    gazebo_process.wait()
     nav_stack_process.terminate()
+    gazebo_process.wait()
     nav_stack_process.wait()
+

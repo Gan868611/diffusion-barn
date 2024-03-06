@@ -31,7 +31,7 @@ find_package(catkin REQUIRED)
 ##   * add a build_depend and a exec_depend tag for each package in MSG_DEP_SET
 ##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
 ##     but can be declared for certainty nonetheless:
-##     * add a exec_depend tag for "message_runtime"
+##     * add a exec_depend tag for "message_runtime"git clone https://github.com/coin-or/Ipopt.git
 ## * In this file (CMakeLists.txt):
 ##   * add "message_generation" and every package in MSG_DEP_SET to
 ##     find_package(catkin REQUIRED COMPONENTS ...)
@@ -103,6 +103,8 @@ catkin_package(
 #  LIBRARIES mlda_algo
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
+rospy
+roscpp
 )
 
 ###########
