@@ -22,20 +22,18 @@ class Inspection():
         self.odom = Odometry()
         self.footprint = PolygonStamped()
 
-
-        # Subscribe
-        
-        # self.subscriber = rospy.SubscribeListener(self.TOPIC, self.inspect, ca)
+        # Subscribe        
+        self.front_scan_sub = rospy.Subscriber(self.TOPIC_FRONT_SCAN, LaserScan, self.front_scan)
         pass
     
-    
-    def inspect(self):
+    def front_scan(self,data):
+        print("Scan: ",data.ranges[:5])
         pass
+    
 
 if __name__ == "__main__":
     rospy.init_node('inspection_node')
     rospy.loginfo("Inspection Node Started")
     inspect = Inspection()
-    while not rospy.is_shutdown():
-        pass
+    rospy.spin()
     
