@@ -18,3 +18,8 @@ python3 /home/mlda/jackal_ws/src/mlda-barn-2024/init.py --world_idx 0
 python3 test_loop.py -s 0 -t 300 -e 1 -r -g -o demo
 
 ```
+
+# Inspect 
+```sh
+python run_init.py --world_idx 250 --rviz --type kul
+```
