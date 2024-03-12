@@ -45,8 +45,9 @@ class Inspection():
         pass
     def callback_global_plan(self,data):
         self.global_plan = data
-        if 0: 
+        if 1: 
             print("Global Path points ", len(data.poses))
+            print(data.poses[3])
             print("Local Path points ", len(self.local_plan.poses))
     def callback_local_plan(self,data):
         self.local_plan = data
@@ -79,7 +80,7 @@ class Inspection():
     
     def callback_footprint(self,data):
         self.footprint = data
-        if 1: 
+        if 0: 
             points_array = []
             for point in data.polygon.points:
                 points_array.append([point.x, point.y,point.z])

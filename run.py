@@ -31,19 +31,19 @@ if __name__ == "__main__":
     parser.add_argument('--world_idx', type=int, default=0)
     parser.add_argument('--gui', action="store_true")
     parser.add_argument('--out', type=str, default="out.csv")
-    parser.add_argument('--type',type=str, default="dwa")
+    parser.add_argument('--type',type=str, default="mlda")
     parser.add_argument('--rviz', action="store_true")
     args = parser.parse_args()
     
     
     ## Get the planner type
     planner_type = args.type
-    if planner_type == "eband":
-        planner_type = "eband"
+    if planner_type == "dwa":
+        planner_type = "DWA"
     elif planner_type == "kul":
         planner_type = "motion_tube"
     else:
-        planner_type = "DWA"
+        planner_type = "mlda"
 
     ##########################################################################################
     ## 0. Launch Gazebo Simulation
