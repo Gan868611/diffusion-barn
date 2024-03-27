@@ -30,6 +30,9 @@ class ROSNode():
         self.global_plan = Path()
         self.local_plan = Path()
         
+        
+        self.mpc = mpc_algo.NMPC()
+        
     
     def callback_odom(self,data):
         self.odometry = data
@@ -68,8 +71,24 @@ class ROSNode():
         self.pub_mpc.publish(mpc_traj_msg)
         pass
 
+    def publish_velocity(self, result):
+        vel = Twist()
+        vel.linear.x = 0.5
+        vel.angular.z = 0.1
+        self.pub_vel.publish(vel)
+        pass
+
     def run(self):
+        # The subscriber is getting the latest data
+        # Setup the MPC
+        # self.mpc.setup()
+        # solve
+        # result = self.mpc.solve() # Return the optimization variables
+        # Control and take only the first step 
         
+        self.publish_velocity(0)
+        
+        # Get from the MPC results
         mpc_x_traj = np.arange(0,2,0.1)
         mpc_y_traj = np.zeros(mpc_x_traj.shape[0])
         theta_traj = np.zeros(mpc_x_traj.shape[0])
