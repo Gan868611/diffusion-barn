@@ -17,6 +17,7 @@ class Inspection():
         self.TOPIC_GLOBAL_PLAN = "/move_base/TrajectoryPlannerROS/global_plan"
         self.TOPIC_LOCAL_PLAN = "/move_base/TrajectoryPlannerROS/local_plan"
         self.TOPIC_ODOM = "/odometry/filtered"
+        self.TOPIC_MPC = "/mpc_plan"
         
         # Object to store
         self.scan = LaserScan()
@@ -30,10 +31,12 @@ class Inspection():
         self.sub_front_scan = rospy.Subscriber(self.TOPIC_FRONT_SCAN, LaserScan, self.callback_front_scan)
         self.sub_odometry = rospy.Subscriber(self.TOPIC_ODOM, Odometry, self.callback_odometry)
         self.sub_global_plan = rospy.Subscriber(self.TOPIC_GLOBAL_PLAN, Path, self.callback_global_plan)
-        self.sub_local_plan = rospy.Subscriber(self.TOPIC_LOCAL_PLAN, Path, self.callback_local_plan)
+        self.sub_local_plan = rospy.Subscriber(self.TOPIC_MPC, Path, self.callback_local_plan)
         self.sub_footprint = rospy.Subscriber(self.TOPIC_LOCAL_FOOTPRINT, PolygonStamped, self.callback_footprint)
         self.sub_cmd_vel = rospy.Subscriber(self.TOPIC_CMD_VEL, Twist, self.callback_cmd_vel)
         self.publish_cmd_vel = rospy.Publisher(self.TOPIC_CMD_VEL, Twist, queue_size= 10)
+        
+        
         pass
     
     def callback_front_scan(self,data):
