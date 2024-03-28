@@ -72,6 +72,7 @@ class ROSNode():
         pass
 
     def publish_velocity(self, result):
+        #TODO: Velocity
         vel = Twist()
         vel.linear.x = 0.5
         vel.angular.z = 0.1
@@ -81,12 +82,13 @@ class ROSNode():
     def run(self):
         # The subscriber is getting the latest data
         # Setup the MPC
-        # self.mpc.setup()
+        #TODO: Do this
+        self.mpc.setup()
         # solve
-        # result = self.mpc.solve() # Return the optimization variables
+        result = self.mpc.solve() # Return the optimization variables
         # Control and take only the first step 
         
-        self.publish_velocity(0)
+        self.publish_velocity(result)
         
         # Get from the MPC results
         mpc_x_traj = np.arange(0,2,0.1)
