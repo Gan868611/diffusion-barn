@@ -4,10 +4,12 @@ import rospy
 import numpy as np
 import mpc_algo 
 import math
-
+import time
 
 from nav_msgs.msg import Path, Odometry, OccupancyGrid
 from geometry_msgs.msg import Twist, PoseStamped,PolygonStamped, Quaternion
+from visualization_msgs.msg import Marker
+
 # import tf
 
 class ROSNode():
@@ -30,22 +32,30 @@ class ROSNode():
         self.global_plan = Path()
         self.local_plan = Path()
         
-        
         self.mpc = mpc_algo.NMPC()
         
     
     def callback_odom(self,data):
         self.odometry = data
         yaw = self.quaternion_to_yaw(data.pose.pose.orientation)
-        print("Theta: ", yaw)
+        x = data.pose.pose.position.x
+        y = data.pose.pose.position.y
+        v = data.twist.twist.linear.x
+        w = data.twist.twist.angular.z
+        vr = v - (w * self.mpc.L)/2
+        vl = v + (w * self.mpc.L)/2
+        self.X0 = [x,y,yaw,vr, vl]
 
     def callback_global_plan(self,data):
         self.global_plan = data
-        print("Global")
+        self.x_ref = [pose.pose.position.x for pose in self.global_plan.poses[5:]]
+        self.y_ref = [pose.pose.position.y for pose in self.global_plan.poses[5:]]
+        # print("Global: ",len(data.poses))
+        # print("Global")
         
     def callback_local_plan(self, data):
         self.local_plan = data
-        print("Local")
+        # print("Local")
 
     def quaternion_to_yaw(self, orientation):
     # Convert quaternion orientation data to yaw angle of robot
@@ -54,14 +64,13 @@ class ROSNode():
         q2 = orientation.z
         q3 = orientation.w
         theta = math.atan2(2.0*(q2*q3 + q0*q1), 1.0 - 2.0*(q1*q1 + q2*q2))
-
         return theta
     
-    def publish_trajectory(self, mpc_x_traj, mpc_y_traj, theta_traj):
+    def publish_trajectory(self, mpc_x_traj, mpc_y_traj):
         mpc_traj_msg = Path()
         mpc_traj_msg.header.stamp = rospy.Time.now()
-        mpc_traj_msg.header.frame_id = "base_link"
-        for i in range(len(mpc_x_traj)):
+        mpc_traj_msg.header.frame_id = "odom"
+        for i in range(mpc_x_traj.shape[0]):
             pose = PoseStamped()
             pose.pose.position.x = mpc_x_traj[i]
             pose.pose.position.y = mpc_y_traj[i]
@@ -69,40 +78,42 @@ class ROSNode():
             mpc_traj_msg.poses.append(pose)
             
         self.pub_mpc.publish(mpc_traj_msg)
-        pass
 
-    def publish_velocity(self, result):
-        #TODO: Velocity
+    def publish_velocity(self, v_opt, w_opt):
         vel = Twist()
-        vel.linear.x = 0.5
-        vel.angular.z = 0.1
+        vel.linear.x = v_opt
+        vel.angular.z = w_opt
         self.pub_vel.publish(vel)
-        pass
 
     def run(self):
-        # The subscriber is getting the latest data
-        # Setup the MPC
-        #TODO: Do this
-        self.mpc.setup()
-        # solve
-        result = self.mpc.solve() # Return the optimization variables
-        # Control and take only the first step 
-        
-        self.publish_velocity(result)
-        
-        # Get from the MPC results
-        mpc_x_traj = np.arange(0,2,0.1)
-        mpc_y_traj = np.zeros(mpc_x_traj.shape[0])
-        theta_traj = np.zeros(mpc_x_traj.shape[0])
-        self.publish_trajectory(mpc_x_traj, mpc_y_traj, theta_traj)
-        pass
-    
+        try:
+            if len(self.x_ref) > self.mpc.N:
+                # Setup the MPC
+                #TODO: Do this
+                self.mpc.setup()
+                # solve
+                v_opt, w_opt, solve_time = self.mpc.solve(self.x_ref, self.y_ref, self.X0) # Return the optimization variables
+                # Control and take only the first step 
+                
+                rospy.loginfo("Solve time: " + str(solve_time))
+                self.publish_velocity(v_opt, w_opt)
+                
+                # Get from the MPC results
+                mpc_x_traj = self.mpc.opt_states[0::self.mpc.n]
+                mpc_y_traj = self.mpc.opt_states[1::self.mpc.n]
+                # print(type(mpc_x_traj), mpc_x_traj.shape)
+                self.publish_trajectory(mpc_x_traj, mpc_y_traj)
+            else:
+                self.publish_velocity(0,0) # Stop
+        except Exception as e:
+            rospy.logerr(e)
     
 if __name__ =="__main__":
     rospy.init_node("nmpc")
     rospy.loginfo("Non-Linear MPC Node running")
     node = ROSNode()
-    pause = rospy.Rate(10) # 10 Hz
+    pause = rospy.Rate(5) # 10 Hz
+    time.sleep(1)
     while not rospy.is_shutdown():
         node.run()
         pause.sleep()

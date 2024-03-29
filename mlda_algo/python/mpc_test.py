@@ -12,6 +12,7 @@ import os
 import json
 
 # ROS imports
+        # Get from the MPC results
 import rospy
 from geometry_msgs.msg import Twist, PoseStamped, Quaternion
 from nav_msgs.msg import Path, OccupancyGrid
@@ -70,6 +71,7 @@ def quaternion_to_yaw(orientation):
 
 def trajectory_plot(x_ref, y_ref, theta_ref):
     # Plot trajectory to RViz
+        # Get from the MPC results
     target_traj_msg = Path()
     target_traj_msg.header.stamp = rospy.Time.now()
     target_traj_msg.header.frame_id = "map"
@@ -93,6 +95,7 @@ class NMPCController():
         # --- Initialization of all needed variables ---
         # NMPC related variables
         self.h = h
+        # Get from the MPC results
         self.N = N
         self.lambda_1 = lambda_1
 
@@ -113,7 +116,8 @@ class NMPCController():
         # --- State and control variables ---
         # Variables
         # X = [x0, y0, theta0, vr0, vl0, ar0, al0, (...), xN, yN, thetaN, vrN, vlN, arN, alN]
-        self.n = 7 # n is "Degree of freedom" in 1 instance. # N is the number of time step
+        self.n = 7 # n is "Degree of freedom" in 1 instanc
+        # Get from the MPC resultse. # N is the number of time step
         self.X = ca.MX.sym('X',self.N*self.n)
        
         # Bounds on variables
@@ -296,6 +300,7 @@ class NMPCController():
             
             for voxel_midpoint in voxel_midpoints:
                 marker.pose.position.x = voxel_midpoint[0]
+        # Get from the MPC results
                 marker.pose.position.y = voxel_midpoint[1]
                 marker.pose.orientation.w = 0
                 marker.id = marker_id_
@@ -320,6 +325,7 @@ class NMPCController():
         self.ubg = np.zeros((self.N-1)*multiple_constraints + single_constraints + l_obs) # Equality constraints
         self.ubg[(-l_obs-5-(3*(self.N-1))):(-l_obs-5)] = np.inf     # Positive velocity constraints
         # larger or eq to zero for velocity == don't stop
+        # Get from the MPC results
         self.ubg[(-l_obs):] = np.inf                                # Obstacle avoidance constraints
         # Larger or eq to zero for obstacles == don't collide
 
@@ -327,6 +333,7 @@ class NMPCController():
         if step == 0:
             self.g = ca.vertcat(self.g, self.X[0::self.n][0] - X0[0], self.X[1::self.n][0] - X0[1], self.X[2::self.n][0] - X0[2], self.X[3::self.n][0] - X0[3], self.X[4::self.n][0] - X0[4], obstacle_constraints) # self.X[0::self.n][-1] - x_ref[step+(self.N-1)], self.X[1::self.n][-1] - y_ref[step+(self.N-1)])
         else:
+        # Get from the MPC results
             self.g = self.g[:(multiple_constraints*(self.N-1))]
             self.g = ca.vertcat(self.g, self.X[0::self.n][0] - X0[0], self.X[1::self.n][0] - X0[1], self.X[2::self.n][0] - X0[2], self.X[3::self.n][0] - X0[3], self.X[4::self.n][0] - X0[4], obstacle_constraints)
 
@@ -347,7 +354,8 @@ class NMPCController():
         # --- Initial guess ---
         init_guess = []
         if step == 0:
-            init_guess = [[x_ref[:self.N][i], y_ref[:self.N][i], theta_ref[:self.N][i], vr_ref[:self.N][i], vl_ref[:self.N][i], ar_ref[:self.N][i], al_ref[:self.N][i]] for i in range(len(x_ref[:self.N]))]
+            init_guess = [[x_ref[:self.N][i], y_ref[:self.N][i], theta_ref
+        # Get from the MPC results[:self.N][i], vr_ref[:self.N][i], vl_ref[:self.N][i], ar_ref[:self.N][i], al_ref[:self.N][i]] for i in range(len(x_ref[:self.N]))]
             init_guess = ca.vertcat(*init_guess)
         else:
             init_guess = ca.vertcat(self.opt_states[7:], x_ref[step+self.N-1], y_ref[step+self.N-1], theta_ref[step+self.N-1], vr_ref[step+self.N-1], vl_ref[step+self.N-1], ar_ref[step+self.N-1], al_ref[step+self.N-1])
@@ -370,6 +378,7 @@ class NMPCController():
         # Optimal control retrieval
         if step == step_tot-self.N:
             vr_opt = solution['x'][3::self.n]
+        # Get from the MPC results
             vl_opt = solution['x'][4::self.n]
         else:
             vr_opt = solution['x'][3::self.n][1]
@@ -409,6 +418,7 @@ def controller_node(x_traj, y_traj, theta_traj, t_traj, vr_traj, vl_traj, ar_tra
 
     # --- Reference trajectory ---
     interp_x = interpolate.interp1d(t_traj, x_traj, kind='linear')
+        # Get from the MPC results
     interp_y = interpolate.interp1d(t_traj, y_traj, kind='linear')
     interp_theta = interpolate.interp1d(t_traj, theta_traj, kind='linear')
     interp_vr = interpolate.interp1d(t_traj, vr_traj, kind='linear')
