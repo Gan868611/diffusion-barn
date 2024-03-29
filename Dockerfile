@@ -13,14 +13,14 @@ RUN git clone https://github.com/utexas-bwi/eband_local_planner.git
 RUN git clone https://gitlab.kuleuven.be/u0144428/free_space_motion_tube.git -b barn2023
 
 RUN apt-get update && apt-get install -y python3-pip build-essential
-RUN pip3 install defusedxml rospkg netifaces numpy
+RUN pip3 install defusedxml rospkg netifaces numpy casadi
 
 # Install ROS components
 RUN apt-get install -y ros-melodic-desktop-full ros-melodic-gmapping \
-ros-melodic-robot-localization ros-melodic-joint-state-publisher-gui ros-melodic-navigation \
-ros-melodic-hector-gazebo-plugins ros-melodic-velodyne-description ros-melodic-rosdoc-lite \
-ros-melodic-twist-mux ros-melodic-sick-tim ros-melodic-teleop-twist-joy ros-melodic-pointgrey-camera-description \
-ros-melodic-interactive-marker-twist-server ros-melodic-lms1xx
+    ros-melodic-robot-localization ros-melodic-joint-state-publisher-gui ros-melodic-navigation \
+    ros-melodic-hector-gazebo-plugins ros-melodic-velodyne-description ros-melodic-rosdoc-lite \
+    ros-melodic-twist-mux ros-melodic-sick-tim ros-melodic-teleop-twist-joy ros-melodic-pointgrey-camera-description \
+    ros-melodic-interactive-marker-twist-server ros-melodic-lms1xx
 
 WORKDIR /jackal_ws
 
