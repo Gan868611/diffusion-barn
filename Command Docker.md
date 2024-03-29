@@ -35,6 +35,6 @@ docker run --rm -dt --name barn \
 	-e LIBGL_ALWAYS_SOFTWARE=1 \
 	-e NVIDIA_DRIVER_CAPABILITIES=all \
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
-	-v ~\Documents\GitHub\mlda-barn-2024\mlda_algo:/jackal_ws/src/mlda-barn-2024/mlda_algo \
+	-v [local]:/jackal_ws/src/mlda-barn-2024/mlda_algo \
 	mldarobotics/barn2024:nmpcv1
 ```
