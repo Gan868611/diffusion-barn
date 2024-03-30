@@ -48,7 +48,7 @@ class Inspection():
         pass
     def callback_global_plan(self,data):
         self.global_plan = data
-        if 1: 
+        if 0: 
             print("Global Path points ", len(data.poses))
             print(data.poses[3])
             print("Local Path points ", len(self.local_plan.poses))
@@ -56,7 +56,7 @@ class Inspection():
         self.local_plan = data
     
     def callback_odometry(self,data):
-        if 0:
+        if 1:
             self.odometry = data
             print("==========================")
             print("----------------------- pose.position")
