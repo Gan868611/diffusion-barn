@@ -333,7 +333,6 @@ class NMPCController():
         if step == 0:
             self.g = ca.vertcat(self.g, self.X[0::self.n][0] - X0[0], self.X[1::self.n][0] - X0[1], self.X[2::self.n][0] - X0[2], self.X[3::self.n][0] - X0[3], self.X[4::self.n][0] - X0[4], obstacle_constraints) # self.X[0::self.n][-1] - x_ref[step+(self.N-1)], self.X[1::self.n][-1] - y_ref[step+(self.N-1)])
         else:
-        # Get from the MPC results
             self.g = self.g[:(multiple_constraints*(self.N-1))]
             self.g = ca.vertcat(self.g, self.X[0::self.n][0] - X0[0], self.X[1::self.n][0] - X0[1], self.X[2::self.n][0] - X0[2], self.X[3::self.n][0] - X0[3], self.X[4::self.n][0] - X0[4], obstacle_constraints)
 
@@ -354,8 +353,7 @@ class NMPCController():
         # --- Initial guess ---
         init_guess = []
         if step == 0:
-            init_guess = [[x_ref[:self.N][i], y_ref[:self.N][i], theta_ref
-        # Get from the MPC results[:self.N][i], vr_ref[:self.N][i], vl_ref[:self.N][i], ar_ref[:self.N][i], al_ref[:self.N][i]] for i in range(len(x_ref[:self.N]))]
+            init_guess = [[x_ref[:self.N][i], y_ref[:self.N][i], theta_ref[:self.N][i], vr_ref[:self.N][i], vl_ref[:self.N][i], ar_ref[:self.N][i], al_ref[:self.N][i]] for i in range(len(x_ref[:self.N]))]
             init_guess = ca.vertcat(*init_guess)
         else:
             init_guess = ca.vertcat(self.opt_states[7:], x_ref[step+self.N-1], y_ref[step+self.N-1], theta_ref[step+self.N-1], vr_ref[step+self.N-1], vl_ref[step+self.N-1], ar_ref[step+self.N-1], al_ref[step+self.N-1])
@@ -378,7 +376,6 @@ class NMPCController():
         # Optimal control retrieval
         if step == step_tot-self.N:
             vr_opt = solution['x'][3::self.n]
-        # Get from the MPC results
             vl_opt = solution['x'][4::self.n]
         else:
             vr_opt = solution['x'][3::self.n][1]
