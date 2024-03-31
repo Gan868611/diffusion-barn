@@ -86,8 +86,8 @@ class ROSNode():
                 self.og_x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::1]]
                 self.og_y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::1]]
             else:
-                self.og_x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::1]]
-                self.og_y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::1]]
+                self.og_x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::2]]
+                self.og_y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::2]]
             self.theta_ref = []
             for i in range(len(self.og_x_ref)-1):
                 theta = math.atan2((self.og_y_ref[i+1] - self.og_y_ref[i]),(self.og_x_ref[i+1] - self.og_x_ref[i]))
