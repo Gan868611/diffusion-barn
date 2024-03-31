@@ -82,8 +82,8 @@ class ROSNode():
     def callback_global_plan(self,data):
         self.global_plan = data
         if 1:
-            self.x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::]]
-            self.y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::]]
+            self.x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::1]]
+            self.y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::1]]
             self.og_x_ref = self.x_ref
             self.og_y_ref = self.y_ref
             self.theta_ref = []
@@ -93,7 +93,7 @@ class ROSNode():
                 if i == 0:
                     self.theta_ref.append(theta)
         self.count+=1
-        print("Global poses: ",len(data.poses))
+        # print("Global poses: ",len(data.poses))
         # print("X_ref ",len(self.x_ref), " : ", self.x_ref)
         # print("Y_ref ",len(self.y_ref), " : ", self.y_ref)
         # print("Theta_ref ", len(self.theta_ref), " : ", self.theta_ref)
@@ -151,10 +151,13 @@ class ROSNode():
             # Setup the MPC
             self.mpc.setup(self.rate)
             # solve
-            print("Before solve: ", len(self.x_ref))
-            self.v_opt, self.w_opt= self.mpc.solve(self.x_ref, self.y_ref, self.theta_ref, self.X0) # Return the optimization variables
+            # print("Before solve: ", len(self.x_ref))
+            if len(self.obs_x) == 0:
+                self.v_opt, self.w_opt= self.mpc.solve(self.x_ref, self.y_ref, self.theta_ref,self.X0) # Return the optimization variables
+            else:
+                self.v_opt, self.w_opt= self.mpc.solve_obs(self.x_ref, self.y_ref, self.theta_ref, self.obs_x, self.obs_y, self.X0) # Return the optimization variables
+
             # Control and take only the first step 
-            
             self.publish_velocity(self.v_opt, self.w_opt)
 
             

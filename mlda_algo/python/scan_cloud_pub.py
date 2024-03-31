@@ -74,7 +74,7 @@ class LaserScanToPointCloud():
         safe = 1 # [m]
         count = 0
         for point in point_generator:
-            if count % 10 == 0:
+            if count % 15 == 0:
                 p_pc_from_laser = np.array([point[0], point[1], point[2], 1])
                 p_pc_from_odom = np.matmul(final_matrix, p_pc_from_laser)
                 if (p_pc_from_odom[0] - trans[0])**2 + (p_pc_from_odom[1] - trans[1])**2 < safe**2:
