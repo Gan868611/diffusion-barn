@@ -82,18 +82,20 @@ class ROSNode():
     def callback_global_plan(self,data):
         self.global_plan = data
         if 1:
-            self.x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::1]]
-            self.y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::1]]
-            self.og_x_ref = self.x_ref
-            self.og_y_ref = self.y_ref
+            if len(data.poses) <= 2*(self.mpc.N+5):
+                self.og_x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::1]]
+                self.og_y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::1]]
+            else:
+                self.og_x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::1]]
+                self.og_y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::1]]
             self.theta_ref = []
-            for i in range(len(self.x_ref)-1):
-                theta = math.atan2((self.y_ref[i+1] - self.y_ref[i]),(self.x_ref[i+1] - self.x_ref[i]))
+            for i in range(len(self.og_x_ref)-1):
+                theta = math.atan2((self.og_y_ref[i+1] - self.og_y_ref[i]),(self.og_x_ref[i+1] - self.og_x_ref[i]))
                 self.theta_ref.append(theta)
                 if i == 0:
                     self.theta_ref.append(theta)
         self.count+=1
-        # print("Global poses: ",len(data.poses))
+        print("Global poses used: ",len(self.og_x_ref), "/",len(data.poses))
         # print("X_ref ",len(self.x_ref), " : ", self.x_ref)
         # print("Y_ref ",len(self.y_ref), " : ", self.y_ref)
         # print("Theta_ref ", len(self.theta_ref), " : ", self.theta_ref)
@@ -145,7 +147,7 @@ class ROSNode():
         
         self.x_ref = self.og_x_ref[k:]
         self.y_ref = self.og_y_ref[k:]
-
+        print("Before loop: ", len(self.x_ref))
         if len(self.x_ref) > self.mpc.N:
 
             # Setup the MPC

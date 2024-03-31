@@ -105,7 +105,7 @@ class NMPC:
         offset = 1
         gfx = self.X[0::self.n][self.N-offset] - x_ref[self.N-offset]
         gfy = self.X[1::self.n][self.N-offset] - y_ref[self.N-offset]
-        gftheta = self.X[2::self.n][self.N-1] - theta_ref[self.N-offset]
+        gftheta = self.X[2::self.n][self.N-offset] - theta_ref[self.N-offset]
         self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
 
         print("Constraints: ", self.g.shape)
@@ -232,7 +232,7 @@ class NMPC:
             offset = 1
             gfx = self.X[0::self.n][self.N-offset] - x_ref[self.N-offset]
             gfy = self.X[1::self.n][self.N-offset] - y_ref[self.N-offset]
-            gftheta = self.X[2::self.n][self.N-1] - theta_ref[self.N-offset]
+            gftheta = self.X[2::self.n][self.N-offset] - theta_ref[self.N-offset]
             self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
 
             safe = 0.275
