@@ -20,13 +20,8 @@ class NMPC:
 
         self.w_max = 5 # Max angular vel [rad/s]
         self.w_min = -5 # Max angular vel [rad/s]
-        
-        
         self.a_weights = 0.2
-
         self.N = N
-        
-        
         self.opt_states = None
         # Obstacle avoidance
         pass
@@ -73,7 +68,6 @@ class NMPC:
     def solve(self, x_ref, y_ref, theta_ref, X0):
         start_time = time.time()
 
-        
         # === Set constraints bound
         per_step_constraints = 8
         init_value_constraints = 5

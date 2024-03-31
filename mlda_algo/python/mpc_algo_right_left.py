@@ -58,7 +58,6 @@ class NMPC:
         gv_l = self.X[4::self.n][1:] - self.X[4::self.n][:-1] - 0.5*self.h*(self.X[6::self.n][1:] + self.X[6::self.n][:-1])
         # Positive linear velocity
         gv_min = (self.X[3::self.n][1:] + self.X[4::self.n][:1]) - self.v_min*2
-        
         gv_max = self.v_max*2  - (self.X[3::self.n][1:] + self.X[4::self.n][:1])
 
         # Minimum angular velocity
@@ -104,11 +103,11 @@ class NMPC:
         # --- Cost function --- 
 
         J = 0
-        self.v_weights = 1
+        self.weight_velocity = 10
         self.weight_position_error = 10 
         self.weight_theta_error = 10
         self.weight_acceleration = 1
-        self.v_ref = 0.2
+        self.v_ref = 0.5
         for i in range(self.N):
             # Position Error cost
             position_error_cost = (self.X[0::self.n][i] - x_ref[i])**2 + (self.X[1::self.n][i] - y_ref[i])**2
@@ -117,7 +116,7 @@ class NMPC:
             theta_error_cost = (self.X[2::self.n][i] - theta_ref[i])**2
 
             # Reference velocity cost
-            # reference_velocity_cost = (self.X[3::self.n][i] - self.v_ref)**2 + (self.X[4::self.n][i] - self.v_ref)**2
+            reference_velocity_cost = (self.X[3::self.n][i] - self.v_ref)**2 + (self.X[4::self.n][i] - self.v_ref)**2
 
             reference_velocity_cost = 0
             # Successive control cost
@@ -125,7 +124,7 @@ class NMPC:
                 successive_error = ((self.X[5::self.n][i+1]-self.X[5::self.n][i])*(self.X[5::self.n][i+1]-self.X[5::self.n][i]))+((self.X[6::self.n][i+1]-self.X[6::self.n][i])*(self.X[6::self.n][i+1]-self.X[6::self.n][i]))
 
             # Cost function calculation
-            J += (self.weight_position_error*position_error_cost + self.v_weights*reference_velocity_cost + self.weight_theta_error*theta_error_cost)
+            J += (self.weight_position_error*position_error_cost + self.weight_velocity*reference_velocity_cost + self.weight_theta_error*theta_error_cost)
         
         
         # === Initial guess
@@ -138,6 +137,9 @@ class NMPC:
         
         # === Solution
         options = {'ipopt.print_level':1, 'print_time': 0, 'expand': 1} # Dictionary of the options
+        # options = {}
+        
+        
         problem = {'f': J , 'x': self.X, 'g': self.g} # Dictionary of the problem
         solver = ca.nlpsol('solver', 'ipopt', problem,options) #ipopt: interior point method
         

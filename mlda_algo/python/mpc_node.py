@@ -2,7 +2,7 @@
 import casadi
 import rospy
 import numpy as np
-import mpc_algo 
+import mpc_algo_right_left as mpc_algo
 import math
 import time
 
@@ -55,8 +55,8 @@ class ROSNode():
 
     def callback_global_plan(self,data):
         self.global_plan = data
-        self.x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::]]
-        self.y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::]]
+        self.x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::2]]
+        self.y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::2]]
         self.theta_ref = []
         for i in range(len(self.x_ref)-1):
             theta = math.atan2((self.y_ref[i+1] - self.y_ref[i]),(self.x_ref[i+1] - self.x_ref[i]))
@@ -104,10 +104,6 @@ class ROSNode():
     def run(self):
         # try:
         if len(self.x_ref) > self.mpc.N:
-            # if len(self.x_ref) > self.mpc.N_ref:
-            #     self.mpc.N = self.mpc.N_ref
-            # else: 
-            #     self.mpc.N = len(self.x_ref)-1
             
             # Setup the MPC
             #TODO: Do this
@@ -117,6 +113,7 @@ class ROSNode():
             # Control and take only the first step 
             
             rospy.loginfo("Solve time: " + str(solve_time))
+            
             self.publish_velocity(self.v_opt, self.w_opt)
 
             
