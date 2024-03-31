@@ -1,12 +1,10 @@
 #!/usr/bin/python
-from hmac import trans_36
 import rospy
 import sensor_msgs.point_cloud2 as pc2
 import tf.transformations as tft
 from sensor_msgs.msg import PointCloud2, LaserScan, PointField
 from std_msgs.msg import Header
 import laser_geometry.laser_geometry as lg
-import math
 import numpy as np
 import tf
 

@@ -10,7 +10,7 @@ Panels:
         - /Odometry1/Shape1
         - /Odometry1/Covariance1/Position1
         - /Odometry1/Covariance1/Orientation1
-        - /Obs1
+        - /ObsMap1
       Splitter Ratio: 0.6345029473304749
     Tree Height: 675
   - Class: rviz/Selection
@@ -377,7 +377,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -389,6 +389,34 @@ Visualization Manager:
       Size (m): 0.10000000149011612
       Style: Flat Squares
       Topic: /front/odom/cloud
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: false
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: FlatColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: ObsMap
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.05000000074505806
+      Style: Flat Squares
+      Topic: /map/cloud
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
@@ -420,7 +448,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 1.560001254081726
+      Angle: 1.565003514289856
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -430,11 +458,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 90.76935577392578
+      Scale: 66.6374740600586
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: -0.4976691007614136
-      Y: 3.1074843406677246
+      X: 0.2629588842391968
+      Y: 0.6736358404159546
     Saved:
       - Angle: 0
         Class: rviz/TopDownOrtho

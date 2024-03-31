@@ -1,62 +1,90 @@
 #!/usr/bin/python
-from hmac import trans_36
+from operator import index
 import rospy
 import sensor_msgs.point_cloud2 as pc2
 import tf.transformations as tft
 from sensor_msgs.msg import PointCloud2, LaserScan, PointField
 from std_msgs.msg import Header
+from nav_msgs.msg import Path, Odometry, OccupancyGrid, MapMetaData
 import laser_geometry.laser_geometry as lg
 import math
 import numpy as np
 import tf
 
-class LaserScanToPointCloud():
+class OccupancyToCloud():
     def __init__(self):
-        self.TOPIC_LASER_SCAN = "/front/scan"
-        self.TOPIC_POINT_CLOUD_LASER = "/front/laser/cloud"
-        self.TOPIC_POINT_CLOUD_ODOM = "/front/odom/cloud"
 
-        self.laser_scan = LaserScan()
+        self.TOPIC_LOCAL_MAP = "/move_base/local_costmap/costmap"
+        self.TOPIC_MAP_CLOUD = "/map/cloud"
+        self.map = OccupancyGrid()
+        self.map_grid = None
         self.point_cloud = PointCloud2()
-        self.laser_projector = lg.LaserProjection()
-        self.sub_laser_scan = rospy.Subscriber(self.TOPIC_LASER_SCAN, LaserScan, self.callback_laser_scan)
-        self.pub_point_cloud = rospy.Publisher(self.TOPIC_POINT_CLOUD_LASER, PointCloud2, queue_size=1)
 
-        self.pub_point = rospy.Publisher(self.TOPIC_POINT_CLOUD_ODOM, PointCloud2, queue_size=1)
+        self.sub_map = rospy.Subscriber(self.TOPIC_LOCAL_MAP, OccupancyGrid, self.callback_map)
+        self.pub_point = rospy.Publisher(self.TOPIC_MAP_CLOUD, PointCloud2, queue_size=1)
     
-    def callback_laser_scan(self,data):
-        self.laser_scan = data
-        # print("LS: ", data.header.frame_id)
 
-        # filtered = []
-        # boundary = 0.5 # [m]
-        # for i in range(len(self.laser_scan.ranges)):
-        #     if self.laser_scan.ranges[i] > boundary:
-        #         self.laser_scan.ranges[i] = self.laser_scan.range_max
+    def callback_map(self, data):
+        self.map = data
+        map_data = np.array(self.map.data)
+        map_Ox = self.map.info.origin.position.x
+        map_Oy = self.map.info.origin.position.y
+        print(self.map.info.origin)
 
-        # self.laser_scan.ranges = filtered
+        print("Occupied: ", np.count_nonzero(map_data >= 90))
+        print("Free: ", np.count_nonzero(map_data < 90))
+        # print("Total: ", data.data.count(100) + data.data.count(0) + data.data.count(-1))
+        # print(map_data)
 
-        self.point_cloud = self.laser_projector.projectLaser(self.laser_scan)
-        # print("PC: ", self.point_cloud.header.frame_id)
-        # print("PC type: ", type(self.point_cloud))
-        # print("H: ", self.point_cloud.height)
-        # print("W: ", self.point_cloud.width)
-        # print("Field: ", self.point_cloud.fields)
-        # print("Point Step: ", self.point_cloud.point_step)
-        # print("Row Step: ", self.point_cloud.row_step)
-        # print("Data: ", type(self.point_cloud.data))
-        self.pub_point_cloud.publish(self.point_cloud)
-        pass
+
+        print("Map Origin: ", map_Ox, map_Oy, " wrt ", self.map.header.frame_id)
+        self.map_res = self.map.info.resolution
+        map_width = self.map.info.width
+        map_height = self.map.info.height
+        print("Map: ", self.map.info.width, self.map.info.height)
+        print("Map res: ", self.map.info.resolution)
+        print(map_data.shape)
+        self.map_grid = np.reshape(map_data, (map_width, map_height))
+        self.map_origin = np.array([map_Ox, map_Oy])
+
+
+
+
+
+
     def run(self, trans, rot):
-        point_generator = pc2.read_points(self.point_cloud)
-        count = 0
-        pointc = PointCloud2()
+        pointcloud = PointCloud2()
 
         rot_matrix = tft.quaternion_matrix(rot)
         trans_matrix = tft.translation_matrix(trans)
         # print(rot_matrix.shape, trans_matrix.shape)
         final_matrix = np.matmul(trans_matrix, rot_matrix)
         # print(final_matrix)
+
+        x_map_to_chassis = trans[0]
+        y_map_to_chassis = trans[1]
+        # print("Map to Chassis: ", x_map_to_chassis, y_map_to_chassis)
+
+        box_distance = 2 #m
+
+        top_left = np.array([x_map_to_chassis - box_distance/2, y_map_to_chassis - box_distance/2])
+        top_right = np.array([x_map_to_chassis - box_distance/2, y_map_to_chassis + box_distance/2])
+        bot_left = np.array([x_map_to_chassis + box_distance/2, y_map_to_chassis - box_distance/2])
+        bot_right = np.array([x_map_to_chassis + box_distance/2, y_map_to_chassis + box_distance/2])
+
+        index_top_left = np.array([int(top_left[0]/self.map_res), int((top_left[1])/self.map_res)])
+        # index_top_right = np.array([int(top_right[0]/self.map_res), int((top_right[1])/self.map_res)])
+        # index_bot_left = np.array([int(bot_left[0]/self.map_res), int((bot_left[1])/self.map_res)])
+        index_bot_right = np.array([int(bot_right[0]/self.map_res), int((bot_right[1])/self.map_res)])
+        # print("Index Top Left: ", index_top_left)
+        # print("Index Top Right: ", index_top_right)
+        # print("Index Bot Left: ", index_bot_left)
+        # print("Index Bot Right: ", index_bot_right)
+
+        box_grid = self.map_grid[index_top_left[0]:index_bot_right[0], index_top_left[1]:index_bot_right[1]]
+        # print("Shape: ", box_grid.shape)
+
+
 
 
         header = Header()
@@ -71,33 +99,35 @@ class LaserScanToPointCloud():
                   PointField('intensity', 12, PointField.FLOAT32, 1)]
         points = []
 
-        safe = 1 # [m]
-        count = 0
-        for point in point_generator:
-            if count % 15 == 0:
-                p_pc_from_laser = np.array([point[0], point[1], point[2], 1])
-                p_pc_from_odom = np.matmul(final_matrix, p_pc_from_laser)
-                if (p_pc_from_odom[0] - trans[0])**2 + (p_pc_from_odom[1] - trans[1])**2 < safe**2:
-                    points.append(p_pc_from_odom)
-            count += 1
-        pointc = pc2.create_cloud(header, fields, points)
-        self.pub_point.publish(pointc)
-        print(len(points))
-        # print("Pub")
+        # Origin
+        points.append([self.map_origin[0], self.map_origin[1], 0, 1])
+        points.append([top_left[0], top_left[1], 0, 1])
+        # points.append([index_bot_right[0]*self.map_res, index_bot_right[1]*self.map_res, 0, 1])
+
+        # for i in range(box_grid.shape[0]):
+        #     for j in range(box_grid.shape[1]):
+        #         if box_grid[j,i] == 100:  # Convert to Odom
+        #             x = i*self.map_res
+        #             y = j*self.map_res
+        #             points.append([x, y, 0, 1])
+
+        pointcloud = pc2.create_cloud(header, fields, points)
+        self.pub_point.publish(pointcloud)
+        # print(len(points))
 
 if __name__ == "__main__":
-    rospy.init_node("laser_scan_to_point_cloud")
-    rospy.loginfo("Laser Scan to Point Cloud Node")
-    l = LaserScanToPointCloud()
+    rospy.init_node("map_to_cloud")
+    rospy.loginfo("Map to Cloud")
+    l = OccupancyToCloud()
+    pause = rospy.Rate(20)
 
     listener = tf.TransformListener()
 
-    pause = rospy.Rate(20)
     while not rospy.is_shutdown():
         try:
-            (trans,rot) = listener.lookupTransform('/odom', '/front_laser', rospy.Time(0))
+            (trans,rot) = listener.lookupTransform('/odom', '/base_link', rospy.Time(0))
             l.run(trans,rot)
         except Exception as e: 
-            print(e)
+            # print(e)
             continue
         pause.sleep()

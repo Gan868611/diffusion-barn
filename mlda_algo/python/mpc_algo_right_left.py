@@ -57,8 +57,8 @@ class NMPC:
         gv_r = self.X[3::self.n][1:] - self.X[3::self.n][:-1] - 0.5*self.h*(self.X[5::self.n][1:] + self.X[5::self.n][:-1])
         gv_l = self.X[4::self.n][1:] - self.X[4::self.n][:-1] - 0.5*self.h*(self.X[6::self.n][1:] + self.X[6::self.n][:-1])
         # Positive linear velocity
-        gv_min = (self.X[3::self.n][1:] + self.X[4::self.n][:1]) - self.v_min*2
-        gv_max = self.v_max*2  - (self.X[3::self.n][1:] + self.X[4::self.n][:1])
+        gv_min = (self.X[3::self.n][1:] + self.X[4::self.n][1:]) - self.v_min*2
+        gv_max = self.v_max*2  - (self.X[3::self.n][1:] + self.X[4::self.n][1:])
 
         # Minimum angular velocity
         gw_min = ((self.X[3::self.n][1:] - self.X[4::self.n][1:])/self.L) - self.w_min
@@ -244,8 +244,8 @@ class NMPC:
             # --- Cost function --- 
 
             J = 0
-            self.weight_velocity = 1
-            self.weight_position_error = 20
+            self.weight_velocity = 5
+            self.weight_position_error = 1
             self.weight_cross_track_error = 1
             self.weight_theta_error = 1
             self.weight_acceleration = 0
