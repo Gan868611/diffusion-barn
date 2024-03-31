@@ -32,7 +32,7 @@ class ROSNode():
         self.global_plan = Path()
         self.local_plan = Path()
         
-        self.rate = 20
+        self.rate = 10
         self.N = 20
         self.mpc = mpc_algo.NMPC(freq=self.rate, N=self.N)
         self.v_opt = 0 
@@ -51,14 +51,12 @@ class ROSNode():
         y = data.pose.pose.position.y
         v = data.twist.twist.linear.x
         w = data.twist.twist.angular.z
-        vr = self.v_opt - (self.w_opt * self.mpc.L)/2
-        vl = self.v_opt + (self.w_opt * self.mpc.L)/2
-        self.X0 = [x,y,yaw,vr, vl]
+        self.X0 = [x,y,yaw,v,w]
 
     def callback_global_plan(self,data):
         self.global_plan = data
-        self.x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::2]]
-        self.y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::2]]
+        self.x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::]]
+        self.y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::]]
         self.theta_ref = []
         for i in range(len(self.x_ref)-1):
             theta = math.atan2((self.y_ref[i+1] - self.y_ref[i]),(self.x_ref[i+1] - self.x_ref[i]))
@@ -104,37 +102,36 @@ class ROSNode():
         self.pub_vel.publish(vel)
 
     def run(self):
-        try:
-            if len(self.x_ref) > self.mpc.N_ref:
-                # if len(self.x_ref) > self.mpc.N_ref:
-                #     self.mpc.N = self.mpc.N_ref
-                # else: 
-                #     self.mpc.N = len(self.x_ref)-1
-                
-                # Setup the MPC
-                #TODO: Do this
-                self.mpc.setup(self.rate)
-                # solve
-                self.v_opt, self.w_opt, solve_time = self.mpc.solve(self.x_ref, self.y_ref, self.theta_ref, self.X0) # Return the optimization variables
-                # Control and take only the first step 
-                
-                rospy.loginfo("Solve time: " + str(solve_time))
-                self.publish_velocity(self.v_opt, self.w_opt)
-                # self.publish_velocity(0, 0.5)
+        # try:
+        if len(self.x_ref) > self.mpc.N:
+            # if len(self.x_ref) > self.mpc.N_ref:
+            #     self.mpc.N = self.mpc.N_ref
+            # else: 
+            #     self.mpc.N = len(self.x_ref)-1
+            
+            # Setup the MPC
+            #TODO: Do this
+            self.mpc.setup(self.rate)
+            # solve
+            self.v_opt, self.w_opt, solve_time = self.mpc.solve(self.x_ref, self.y_ref, self.theta_ref, self.X0) # Return the optimization variables
+            # Control and take only the first step 
+            
+            rospy.loginfo("Solve time: " + str(solve_time))
+            self.publish_velocity(self.v_opt, self.w_opt)
 
-                
-                # Get from the MPC results
-                mpc_x_traj = self.mpc.opt_states[0::self.mpc.n]
-                mpc_y_traj = self.mpc.opt_states[1::self.mpc.n]
-                # print(type(mpc_x_traj), mpc_x_traj.shape)
-                self.publish_trajectory(mpc_x_traj, mpc_y_traj)
-                self.x_ref = self.x_ref[1:]
-                self.y_ref = self.y_ref[1:]
-            else:
-                print("Stopped")
-                self.publish_velocity(0,0)
-        except Exception as e:
-            rospy.logerr(e)
+            
+            # Get from the MPC results
+            mpc_x_traj = self.mpc.opt_states[0::self.mpc.n]
+            mpc_y_traj = self.mpc.opt_states[1::self.mpc.n]
+            # print(type(mpc_x_traj), mpc_x_traj.shape)
+            self.publish_trajectory(mpc_x_traj, mpc_y_traj)
+            self.x_ref = self.x_ref[1:]
+            self.y_ref = self.y_ref[1:]
+        else:
+            print("Stopped")
+            self.publish_velocity(0,0)
+        # except Exception as e:
+        #     rospy.logerr(e)
     
 if __name__ =="__main__":
     rospy.init_node("nmpc")
