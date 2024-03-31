@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+
 import casadi
 import rospy
 import numpy as np
@@ -6,9 +7,14 @@ import mpc_algo_right_left as mpc_algo
 import math
 import time
 
+
 from nav_msgs.msg import Path, Odometry, OccupancyGrid
 from geometry_msgs.msg import Twist, PoseStamped,PolygonStamped, Quaternion
+from sensor_msgs.msg import PointCloud2
 from visualization_msgs.msg import Marker
+import sensor_msgs.point_cloud2 as pc2
+import laser_geometry.laser_geometry as lg
+
 
 # import tf
 
@@ -19,6 +25,7 @@ class ROSNode():
         self.TOPIC_LOCAL_PLAN = "/move_base/TrajectoryPlannerROS/local_plan"
         self.TOPIC_ODOM = "/odometry/filtered"
         self.TOPIC_MPC_PLAN = "/mpc_plan"
+        self.TOPIC_CLOUD = "/front/odom/cloud"
         
         self.pub_vel = rospy.Publisher(self.TOPIC_VEL, Twist, queue_size=1, latch=True)
         self.pub_mpc  = rospy.Publisher(self.TOPIC_MPC_PLAN, Path, queue_size=1)
@@ -26,7 +33,9 @@ class ROSNode():
         self.sub_odometry = rospy.Subscriber(self.TOPIC_ODOM, Odometry, self.callback_odom)
         self.sub_global_plan = rospy.Subscriber(self.TOPIC_GLOBAL_PLAN, Path, self.callback_global_plan)
         self.sub_local_plan = rospy.Subscriber(self.TOPIC_LOCAL_PLAN, Path, self.callback_local_plan)
+        self.sub_cloud = rospy.Subscriber(self.TOPIC_CLOUD, PointCloud2, self.callback_cloud)
 
+        self.projector = lg.LaserProjection()
         self.cmd_vel = Twist()
         self.odometry = Odometry()
         self.global_plan = Path()
@@ -41,12 +50,24 @@ class ROSNode():
 
         self.x_ref = []
         self.y_ref = []
-
+        self.obs_x = []
+        self.obs_y = []
         self.og_x_ref = []
         self.og_y_ref = []
         self.theta_ref = []
         self.count = 0
     
+    def callback_cloud(self, data):
+        point_generator = pc2.read_points(data)
+        self.obs_x = []
+        self.obs_y = []
+        count = 0
+        for point in point_generator:
+            self.obs_x.append(point[0])
+            self.obs_y.append(point[1])
+            count+=1
+        print("Obstacle points: ", count)
+
     def callback_odom(self,data):
         self.odometry = data
         yaw = self.quaternion_to_yaw(data.pose.pose.orientation)
@@ -61,8 +82,8 @@ class ROSNode():
     def callback_global_plan(self,data):
         self.global_plan = data
         if 1:
-            self.x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::2]]
-            self.y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::2]]
+            self.x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::]]
+            self.y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::]]
             self.og_x_ref = self.x_ref
             self.og_y_ref = self.y_ref
             self.theta_ref = []
@@ -72,7 +93,7 @@ class ROSNode():
                 if i == 0:
                     self.theta_ref.append(theta)
         self.count+=1
-        # print("Global poses: ",len(data.poses))
+        print("Global poses: ",len(data.poses))
         # print("X_ref ",len(self.x_ref), " : ", self.x_ref)
         # print("Y_ref ",len(self.y_ref), " : ", self.y_ref)
         # print("Theta_ref ", len(self.theta_ref), " : ", self.theta_ref)
@@ -112,14 +133,27 @@ class ROSNode():
 
     def run(self):
         # try:
+        # Clear up to the closest point
+        k = 0
+        dist = [1]*len(self.og_x_ref)
+        min_dist = 1
+        for i in range(len(self.og_x_ref)):
+            dist[i] = math.sqrt((self.og_x_ref[i] - self.odometry.pose.pose.position.x)**2 + (self.og_y_ref[i] - self.odometry.pose.pose.position.y)**2)
+            if dist[i] <= min_dist:
+                k = i
+                min_dist = dist[i]
+        
+        self.x_ref = self.og_x_ref[k:]
+        self.y_ref = self.og_y_ref[k:]
+
         if len(self.x_ref) > self.mpc.N:
-            
+
             # Setup the MPC
             self.mpc.setup(self.rate)
             # solve
+            print("Before solve: ", len(self.x_ref))
             self.v_opt, self.w_opt= self.mpc.solve(self.x_ref, self.y_ref, self.theta_ref, self.X0) # Return the optimization variables
             # Control and take only the first step 
-            
             
             self.publish_velocity(self.v_opt, self.w_opt)
 
@@ -131,17 +165,9 @@ class ROSNode():
             self.publish_trajectory(mpc_x_traj, mpc_y_traj)
 
 
-            # Clear up to the closest point
-            k = 0
-            dist = [1]*len(self.og_x_ref)
-            min_dist = 1
-            for i in range(len(self.og_x_ref)):
-                dist[i] = math.sqrt((self.og_x_ref[i] - self.odometry.pose.pose.position.x)**2 + (self.og_y_ref[i] - self.odometry.pose.pose.position.y)**2)
-                if dist[i] <= min_dist:
-                    k = i
-            self.x_ref = self.og_x_ref[k+1:]
-            self.y_ref = self.og_y_ref[k+1:]
 
+            # self.x_ref = self.x_ref[1:]
+            # self.y_ref = self.y_ref[1:]
 
             # print("K: ", k)
             # print(dist)
@@ -175,7 +201,7 @@ if __name__ =="__main__":
     node = ROSNode()
     pause = rospy.Rate(node.rate)
     time.sleep(1)
-    start_traj()
+    # start_traj()
     while not rospy.is_shutdown():
         node.run()
         pause.sleep()

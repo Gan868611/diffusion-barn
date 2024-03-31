@@ -15,13 +15,13 @@ class NMPC:
         # For each wheels
         self.v_max = 1 # Max velocity [m/s]
         self.v_min = 0 # Min velocity [m/s]
-        self.v_ref = 1 # Reference velocity [m/s]
+        self.v_ref = 0.5 # Reference velocity [m/s]
 
 
         self.a_max = 1 # Max acceleration [m/s^2]
 
-        self.w_max = 5 # Max angular vel [rad/s]
-        self.w_min = -5 # Max angular vel [rad/s]
+        self.w_max = 2 # Max angular vel [rad/s]
+        self.w_min = -2 # Max angular vel [rad/s]
         
         self.a_weights = 0.2
         self.N = N
@@ -96,9 +96,14 @@ class NMPC:
             self.g = ca.vertcat(self.g, g0)
             
         # Final value constraints expression
-        gfx = self.X[0::self.n][self.N-1] - x_ref[self.N-1]
-        gfy = self.X[1::self.n][self.N-1] - y_ref[self.N-1]
-        gftheta = self.X[2::self.n][self.N-1] - theta_ref[self.N-1]
+        # gmx = self.X[0::self.n][int((self.N-1)/2)] - x_ref[int((self.N-1)/2)]
+        # gmy = self.X[1::self.n][int((self.N-1)/2)] - y_ref[int((self.N-1)/2)]
+        # gmtheta = self.X[2::self.n][int((self.N-1)/2)] - theta_ref[int((self.N-1)/2)]
+        
+        offset = 1
+        gfx = self.X[0::self.n][self.N-offset] - x_ref[self.N-offset]
+        gfy = self.X[1::self.n][self.N-offset] - y_ref[self.N-offset]
+        gftheta = self.X[2::self.n][self.N-1] - theta_ref[self.N-offset]
         self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
 
         # print("Constraints: ", self.g.shape)
@@ -106,10 +111,14 @@ class NMPC:
 
         J = 0
         self.weight_velocity = 1
-        self.weight_position_error = 1
+        self.weight_position_error = 20
         self.weight_cross_track_error = 1
-        self.weight_theta_error = 1 
-        self.weight_acceleration = 1
+        self.weight_theta_error = 1
+        self.weight_acceleration = 0
+
+        self.weight_inital_theta_error = 1
+        initial_theta_error = (self.X[2::self.n][1] - theta_ref[1])**2
+        J += self.weight_inital_theta_error*initial_theta_error
         for i in range(self.N):
             # Position Error cost
             position_error_cost = (self.X[0::self.n][i] - x_ref[i])**2 + (self.X[1::self.n][i] - y_ref[i])**2
@@ -171,11 +180,11 @@ class NMPC:
         
         
         print("============Debugging=======")
-        # print("V: ", v_opt, " W: ", w_opt)
+        print("V: ", v_opt, " W: ", w_opt)
         # print("Initial state: ", X0[0], " ", X0[1])
         # print("solution at t = 0: ", self.opt_states[0], " ", self.opt_states[1])
         
-        print("V: ", v_opt_list, " W: ", w_opt_list)
+        # print("V: ", v_opt_list, " W: ", w_opt_list)
         print("Cost: ", solution['f'])
         print("Solve time: ", solve_time)
         
