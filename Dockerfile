@@ -14,7 +14,7 @@ RUN git clone https://gitlab.kuleuven.be/u0144428/free_space_motion_tube.git -b 
 
 RUN apt-get update && apt-get install -y python3-pip build-essential
 RUN pip3 install --upgrade pip
-RUN pip3 install defusedxml rospkg netifaces numpy
+RUN pip3 install defusedxml rospkg netifaces numpy jupyter scipy matplotlib
 RUN pip3 install casadi
 
 # Install ROS components

@@ -4,7 +4,7 @@ import numpy as np
 import time
 
 class NMPC:
-    def __init__(self, freq = 5):
+    def __init__(self, freq = 20, N = 20):
         self.f = freq # Controller frequency [Hz]
         self.h = 1/self.f
         # self.rate = rospy.Rate(self.f)
@@ -14,7 +14,7 @@ class NMPC:
         # Using rosparam
         # For each wheels
         self.v_max = 1 # Max velocity [m/s]
-        self.v_min = -1
+        self.v_min = 0.1 # Min velocity [m/s]
         
         self.a_max = 1 # Max acceleration [m/s^2]
 
@@ -24,8 +24,8 @@ class NMPC:
         
         self.a_weights = 0.2
 
-        self.N_ref = 20
-        self.N = 20
+        self.N_ref = N
+        self.N = N
         
         
         self.opt_states = None
@@ -75,7 +75,7 @@ class NMPC:
 
         ### This is not dynamic contraints, because they only relate the existing optimization variables
     
-    def solve(self, x_ref, y_ref, X0):
+    def solve(self, x_ref, y_ref, theta_ref, X0):
         start_time = time.time()
 
         
@@ -100,30 +100,36 @@ class NMPC:
 
         J = 0
         self.v_weights = 1
-        self.follow_weights = 10
-        self.a_weights = 1
+        self.weight_position_error = 10 
+        self.weight_theta_error = 10
+        self.weight_acceleration = 1
         self.v_ref = 0.2
         for i in range(self.N):
-            # Reference following error cost
-            ref_follow_error = ((self.X[0::self.n][i] - x_ref[i])*(self.X[0::self.n][i] - x_ref[i])) + ((self.X[1::self.n][i] - y_ref[i])*(self.X[1::self.n][i] - y_ref[i]))
+            # Position Error cost
+            position_error_cost = (self.X[0::self.n][i] - x_ref[i])**2 + (self.X[1::self.n][i] - y_ref[i])**2
             
+            # Theta Error cost 
+            theta_error_cost = (self.X[2::self.n][i] - theta_ref[i])**2
+
             # Reference velocity cost
-            
-            ref_vel_error = (self.X[3::self.n][i] - self.v_ref)**2 + (self.X[4::self.n][i] - self.v_ref)**2
+            # reference_velocity_cost = (self.X[3::self.n][i] - self.v_ref)**2 + (self.X[4::self.n][i] - self.v_ref)**2
+
+            reference_velocity_cost = 0
             # Successive control cost
             if i != (self.N-1):
                 successive_error = ((self.X[5::self.n][i+1]-self.X[5::self.n][i])*(self.X[5::self.n][i+1]-self.X[5::self.n][i]))+((self.X[6::self.n][i+1]-self.X[6::self.n][i])*(self.X[6::self.n][i+1]-self.X[6::self.n][i]))
 
             # Cost function calculation
-            J += (self.follow_weights*ref_follow_error + self.v_weights*ref_vel_error)
+            J += (self.weight_position_error*position_error_cost + self.v_weights*reference_velocity_cost + self.weight_theta_error*theta_error_cost)
         
         
         # === Initial guess
         if self.opt_states == None or self.N < self.N_ref:
             init_guess = 0
         else:
-            print("Used old values")
+            # print("Used old values")
             init_guess = ca.vertcat(self.opt_states[7:], self.opt_states[-7:])
+            init_guess = 0
         
         # === Solution
         options = {'ipopt.print_level':1, 'print_time': 0, 'expand': 1} # Dictionary of the options

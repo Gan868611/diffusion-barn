@@ -32,11 +32,16 @@ class ROSNode():
         self.global_plan = Path()
         self.local_plan = Path()
         
-        self.mpc = mpc_algo.NMPC()
+        self.rate = 20
+        self.N = 20
+        self.mpc = mpc_algo.NMPC(freq=self.rate, N=self.N)
         self.v_opt = 0 
         self.w_opt = 0
         
-        self.rate = 20
+
+        self.x_ref = []
+        self.y_ref = []
+        self.theta_ref = []
         
     
     def callback_odom(self,data):
@@ -52,10 +57,18 @@ class ROSNode():
 
     def callback_global_plan(self,data):
         self.global_plan = data
-        self.x_ref = [pose.pose.position.x for pose in self.global_plan.poses[5::2]]
-        self.y_ref = [pose.pose.position.y for pose in self.global_plan.poses[5::2]]
+        self.x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::2]]
+        self.y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::2]]
+        self.theta_ref = []
+        for i in range(len(self.x_ref)-1):
+            theta = math.atan2((self.y_ref[i+1] - self.y_ref[i]),(self.x_ref[i+1] - self.x_ref[i]))
+            self.theta_ref.append(theta)
+            if i == 0:
+                self.theta_ref.append(theta)
         # print("Global poses: ",len(data.poses))
-        # print("Global")
+        # print("X_ref ",len(self.x_ref), " : ", self.x_ref)
+        # print("Y_ref ",len(self.y_ref), " : ", self.y_ref)
+        # print("Theta_ref ", len(self.theta_ref), " : ", self.theta_ref)
         
     def callback_local_plan(self, data):
         self.local_plan = data
@@ -68,6 +81,7 @@ class ROSNode():
         q2 = orientation.z
         q3 = orientation.w
         theta = math.atan2(2.0*(q2*q3 + q0*q1), 1.0 - 2.0*(q1*q1 + q2*q2))
+        # print("Yaw: ", theta)
         return theta
     
     def publish_trajectory(self, mpc_x_traj, mpc_y_traj):
@@ -91,17 +105,17 @@ class ROSNode():
 
     def run(self):
         try:
-            if len(self.x_ref) > 5:
-                if len(self.x_ref) > self.mpc.N_ref:
-                    self.mpc.N = self.mpc.N_ref
-                else: 
-                    self.mpc.N = len(self.x_ref)-1
+            if len(self.x_ref) > self.mpc.N_ref:
+                # if len(self.x_ref) > self.mpc.N_ref:
+                #     self.mpc.N = self.mpc.N_ref
+                # else: 
+                #     self.mpc.N = len(self.x_ref)-1
                 
                 # Setup the MPC
                 #TODO: Do this
                 self.mpc.setup(self.rate)
                 # solve
-                self.v_opt, self.w_opt, solve_time = self.mpc.solve(self.x_ref, self.y_ref, self.X0) # Return the optimization variables
+                self.v_opt, self.w_opt, solve_time = self.mpc.solve(self.x_ref, self.y_ref, self.theta_ref, self.X0) # Return the optimization variables
                 # Control and take only the first step 
                 
                 rospy.loginfo("Solve time: " + str(solve_time))
@@ -114,6 +128,8 @@ class ROSNode():
                 mpc_y_traj = self.mpc.opt_states[1::self.mpc.n]
                 # print(type(mpc_x_traj), mpc_x_traj.shape)
                 self.publish_trajectory(mpc_x_traj, mpc_y_traj)
+                self.x_ref = self.x_ref[1:]
+                self.y_ref = self.y_ref[1:]
             else:
                 print("Stopped")
                 self.publish_velocity(0,0)
@@ -124,7 +140,7 @@ if __name__ =="__main__":
     rospy.init_node("nmpc")
     rospy.loginfo("Non-Linear MPC Node running")
     node = ROSNode()
-    pause = rospy.Rate(node.rate) # 10 Hz
+    pause = rospy.Rate(node.rate)
     time.sleep(1)
     while not rospy.is_shutdown():
         node.run()

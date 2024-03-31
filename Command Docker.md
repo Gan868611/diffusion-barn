@@ -30,11 +30,11 @@ docker push mldarobotics/barn2024:[name]
 ```shell
 docker run --rm -dt --name barn \
 	--gpus all \
-	-e DISPLAY=":0" \
+	-e DISPLAY=":1" \
 	-e QT_X11_NO_MITSHM=1 \
 	-e LIBGL_ALWAYS_SOFTWARE=1 \
 	-e NVIDIA_DRIVER_CAPABILITIES=all \
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
-	-v [local]:/jackal_ws/src/mlda-barn-2024/mlda_algo \
+	-v /home/huy/mlda-barn-2024:/jackal_ws/src/mlda-barn-2024 \
 	mldarobotics/barn2024:nmpcv1
 ```
