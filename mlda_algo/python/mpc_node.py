@@ -55,8 +55,8 @@ class ROSNode():
 
     def callback_global_plan(self,data):
         self.global_plan = data
-        self.x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::2]]
-        self.y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::2]]
+        self.x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::]]
+        self.y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::]]
         self.theta_ref = []
         for i in range(len(self.x_ref)-1):
             theta = math.atan2((self.y_ref[i+1] - self.y_ref[i]),(self.x_ref[i+1] - self.x_ref[i]))
@@ -125,17 +125,33 @@ class ROSNode():
             self.x_ref = self.x_ref[1:]
             self.y_ref = self.y_ref[1:]
         else:
-            print("Stopped")
+            print("Stopped", len(self.x_ref))
             self.publish_velocity(0,0)
         # except Exception as e:
         #     rospy.logerr(e)
-    
+
+
+def start_traj():
+    start_traj_publisher = rospy.Publisher("/start_traj", Path, queue_size=1, latch=True)
+    traj = rospy.wait_for_message("/move_base/TrajectoryPlannerROS/global_plan", Path,timeout=1)
+    # mpc_traj_msg = Path()
+    # mpc_traj_msg.header.stamp = rospy.Time.now()
+    # mpc_traj_msg.header.frame_id = "odom"
+    # for i in range(traj.shape[0]):
+    #     pose = PoseStamped()
+    #     pose.pose.position.x = traj[i]
+    #     pose.pose.position.y = traj[i]
+    #     pose.pose.orientation = Quaternion(0,0,0,1)
+    #     mpc_traj_msg.poses.append(pose)
+    start_traj_publisher.publish(traj)
+    pass
 if __name__ =="__main__":
     rospy.init_node("nmpc")
     rospy.loginfo("Non-Linear MPC Node running")
     node = ROSNode()
     pause = rospy.Rate(node.rate)
     time.sleep(1)
+    start_traj()
     while not rospy.is_shutdown():
         node.run()
         pause.sleep()
