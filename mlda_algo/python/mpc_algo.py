@@ -15,11 +15,11 @@ class NMPC:
         # For each wheels
         self.v_max = 1 # Max velocity [m/s]
         self.v_min = 0.1 # Min velocity [m/s]
-        
+        self.v_ref = 0.5
         self.a_max = 1 # Max acceleration [m/s^2]
 
-        self.w_max = 5 # Max angular vel [rad/s]
-        self.w_min = -5 # Max angular vel [rad/s]
+        self.w_max = 10 # Max angular vel [rad/s]
+        self.w_min = -10 # Max angular vel [rad/s]
         self.a_weights = 0.2
         self.N = N
         self.opt_states = None
@@ -103,7 +103,6 @@ class NMPC:
         self.weight_position_error = 10
         self.weight_theta_error = 1
         self.weight_acceleration = 1
-        self.v_ref = 0.2
         for i in range(self.N):
             # Position Error cost
             position_error_cost = (self.X[0::self.n][i] - x_ref[i])**2 + (self.X[1::self.n][i] - y_ref[i])**2

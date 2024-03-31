@@ -41,8 +41,11 @@ class ROSNode():
 
         self.x_ref = []
         self.y_ref = []
+
+        self.og_x_ref = []
+        self.og_y_ref = []
         self.theta_ref = []
-        
+        self.count = 0
     
     def callback_odom(self,data):
         self.odometry = data
@@ -51,18 +54,24 @@ class ROSNode():
         y = data.pose.pose.position.y
         v = data.twist.twist.linear.x
         w = data.twist.twist.angular.z
-        self.X0 = [x,y,yaw,v,w]
+        vr = v + w*self.mpc.L/2
+        vl = v - w*self.mpc.L/2
+        self.X0 = [x,y,yaw,vr,vl]
 
     def callback_global_plan(self,data):
         self.global_plan = data
-        self.x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::]]
-        self.y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::]]
-        self.theta_ref = []
-        for i in range(len(self.x_ref)-1):
-            theta = math.atan2((self.y_ref[i+1] - self.y_ref[i]),(self.x_ref[i+1] - self.x_ref[i]))
-            self.theta_ref.append(theta)
-            if i == 0:
+        if 1:
+            self.x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::2]]
+            self.y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::2]]
+            self.og_x_ref = self.x_ref
+            self.og_y_ref = self.y_ref
+            self.theta_ref = []
+            for i in range(len(self.x_ref)-1):
+                theta = math.atan2((self.y_ref[i+1] - self.y_ref[i]),(self.x_ref[i+1] - self.x_ref[i]))
                 self.theta_ref.append(theta)
+                if i == 0:
+                    self.theta_ref.append(theta)
+        self.count+=1
         # print("Global poses: ",len(data.poses))
         # print("X_ref ",len(self.x_ref), " : ", self.x_ref)
         # print("Y_ref ",len(self.y_ref), " : ", self.y_ref)
@@ -106,13 +115,11 @@ class ROSNode():
         if len(self.x_ref) > self.mpc.N:
             
             # Setup the MPC
-            #TODO: Do this
             self.mpc.setup(self.rate)
             # solve
-            self.v_opt, self.w_opt, solve_time = self.mpc.solve(self.x_ref, self.y_ref, self.theta_ref, self.X0) # Return the optimization variables
+            self.v_opt, self.w_opt= self.mpc.solve(self.x_ref, self.y_ref, self.theta_ref, self.X0) # Return the optimization variables
             # Control and take only the first step 
             
-            rospy.loginfo("Solve time: " + str(solve_time))
             
             self.publish_velocity(self.v_opt, self.w_opt)
 
@@ -122,8 +129,23 @@ class ROSNode():
             mpc_y_traj = self.mpc.opt_states[1::self.mpc.n]
             # print(type(mpc_x_traj), mpc_x_traj.shape)
             self.publish_trajectory(mpc_x_traj, mpc_y_traj)
-            self.x_ref = self.x_ref[1:]
-            self.y_ref = self.y_ref[1:]
+
+
+            # Clear up to the closest point
+            k = 0
+            dist = [1]*len(self.og_x_ref)
+            min_dist = 1
+            for i in range(len(self.og_x_ref)):
+                dist[i] = math.sqrt((self.og_x_ref[i] - self.odometry.pose.pose.position.x)**2 + (self.og_y_ref[i] - self.odometry.pose.pose.position.y)**2)
+                if dist[i] <= min_dist:
+                    k = i
+            self.x_ref = self.og_x_ref[k+1:]
+            self.y_ref = self.og_y_ref[k+1:]
+
+
+            # print("K: ", k)
+            # print(dist)
+
         else:
             print("Stopped", len(self.x_ref))
             self.publish_velocity(0,0)
@@ -145,6 +167,8 @@ def start_traj():
     #     mpc_traj_msg.poses.append(pose)
     start_traj_publisher.publish(traj)
     pass
+
+
 if __name__ =="__main__":
     rospy.init_node("nmpc")
     rospy.loginfo("Non-Linear MPC Node running")

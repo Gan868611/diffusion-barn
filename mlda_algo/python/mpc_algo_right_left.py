@@ -14,16 +14,16 @@ class NMPC:
         # Using rosparam
         # For each wheels
         self.v_max = 1 # Max velocity [m/s]
-        self.v_min = 0.1 # Min velocity [m/s]
-        
+        self.v_min = 0 # Min velocity [m/s]
+        self.v_ref = 1 # Reference velocity [m/s]
+
+
         self.a_max = 1 # Max acceleration [m/s^2]
 
-        self.w_max = 1 # Max angular vel [rad/s]
-        self.w_min = -1 # Max angular vel [rad/s]
-        
+        self.w_max = 5 # Max angular vel [rad/s]
+        self.w_min = -5 # Max angular vel [rad/s]
         
         self.a_weights = 0.2
-
         self.N = N
         
         
@@ -90,24 +90,26 @@ class NMPC:
         self.g = self.g[:(self.N - 1) * per_step_constraints]  # Since we are recycling the same instance
         # We have to truncate the previous optimization run
         
-        # Init-value constraints expression
+        # Init value constraints expression
         for i in range(init_value_constraints):
             g0 = self.X[i::self.n][0] - X0[i]
             self.g = ca.vertcat(self.g, g0)
             
+        # Final value constraints expression
         gfx = self.X[0::self.n][self.N-1] - x_ref[self.N-1]
         gfy = self.X[1::self.n][self.N-1] - y_ref[self.N-1]
         gftheta = self.X[2::self.n][self.N-1] - theta_ref[self.N-1]
         self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
-        print("Constraints: ", self.g.shape)
+
+        # print("Constraints: ", self.g.shape)
         # --- Cost function --- 
 
         J = 0
-        self.weight_velocity = 10
-        self.weight_position_error = 10 
-        self.weight_theta_error = 10
+        self.weight_velocity = 1
+        self.weight_position_error = 1
+        self.weight_cross_track_error = 1
+        self.weight_theta_error = 1 
         self.weight_acceleration = 1
-        self.v_ref = 0.5
         for i in range(self.N):
             # Position Error cost
             position_error_cost = (self.X[0::self.n][i] - x_ref[i])**2 + (self.X[1::self.n][i] - y_ref[i])**2
@@ -117,14 +119,17 @@ class NMPC:
 
             # Reference velocity cost
             reference_velocity_cost = (self.X[3::self.n][i] - self.v_ref)**2 + (self.X[4::self.n][i] - self.v_ref)**2
+            # reference_velocity_cost = 0
 
-            reference_velocity_cost = 0
+            # Cross-track Error cost
+            cross_track_error_cost = -(x_ref[i] - self.X[0::self.n][i])*(np.sin(theta_ref[i])) + (y_ref[i] - self.X[1::self.n][i])*(np.cos(theta_ref[i]))
+
             # Successive control cost
-            if i != (self.N-1):
-                successive_error = ((self.X[5::self.n][i+1]-self.X[5::self.n][i])*(self.X[5::self.n][i+1]-self.X[5::self.n][i]))+((self.X[6::self.n][i+1]-self.X[6::self.n][i])*(self.X[6::self.n][i+1]-self.X[6::self.n][i]))
+            # if i != (self.N-1):
+            #     successive_error = ((self.X[5::self.n][i+1]-self.X[5::self.n][i])*(self.X[5::self.n][i+1]-self.X[5::self.n][i]))+((self.X[6::self.n][i+1]-self.X[6::self.n][i])*(self.X[6::self.n][i+1]-self.X[6::self.n][i]))
 
             # Cost function calculation
-            J += (self.weight_position_error*position_error_cost + self.weight_velocity*reference_velocity_cost + self.weight_theta_error*theta_error_cost)
+            J += (self.weight_position_error*position_error_cost + self.weight_velocity*reference_velocity_cost + self.weight_theta_error*theta_error_cost + self.weight_cross_track_error*cross_track_error_cost)
         
         
         # === Initial guess
@@ -149,9 +154,16 @@ class NMPC:
         vr_opt = solution['x'][3::self.n][2]
         vl_opt = solution['x'][4::self.n][2]
         
+
+
         v_opt = (vr_opt + vl_opt)/2
         w_opt = (vr_opt - vl_opt)/self.L
         
+        vr_opt_list = solution['x'][3::self.n]
+        vl_opt_list = solution['x'][4::self.n]
+        v_opt_list = (vr_opt_list + vl_opt_list)/2
+        w_opt_list = (vr_opt_list - vl_opt_list)/self.L
+
         # Intial guess for next steps
         self.opt_states = solution['x']
         solve_time = round(time.time() - start_time,5)
@@ -163,11 +175,12 @@ class NMPC:
         # print("Initial state: ", X0[0], " ", X0[1])
         # print("solution at t = 0: ", self.opt_states[0], " ", self.opt_states[1])
         
-        print("V: ", v_opt, " W: ", w_opt)
+        print("V: ", v_opt_list, " W: ", w_opt_list)
         print("Cost: ", solution['f'])
+        print("Solve time: ", solve_time)
         
         # print(solution)
             
             
-        return v_opt, w_opt, solve_time
+        return v_opt, w_opt
         
