@@ -200,29 +200,12 @@ class ROSNode():
         #     rospy.logerr(e)
 
 
-def start_traj():
-    start_traj_publisher = rospy.Publisher("/start_traj", Path, queue_size=1, latch=True)
-    traj = rospy.wait_for_message("/move_base/TrajectoryPlannerROS/global_plan", Path,timeout=1)
-    # mpc_traj_msg = Path()
-    # mpc_traj_msg.header.stamp = rospy.Time.now()
-    # mpc_traj_msg.header.frame_id = "odom"
-    # for i in range(traj.shape[0]):
-    #     pose = PoseStamped()
-    #     pose.pose.position.x = traj[i]
-    #     pose.pose.position.y = traj[i]
-    #     pose.pose.orientation = Quaternion(0,0,0,1)
-    #     mpc_traj_msg.poses.append(pose)
-    start_traj_publisher.publish(traj)
-    pass
-
-
 if __name__ =="__main__":
     rospy.init_node("nmpc")
     rospy.loginfo("Non-Linear MPC Node running")
     node = ROSNode()
     pause = rospy.Rate(node.rate)
     time.sleep(1)
-    # start_traj()
     while not rospy.is_shutdown():
         node.run()
         pause.sleep()

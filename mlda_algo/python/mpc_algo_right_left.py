@@ -258,11 +258,25 @@ class NMPC:
             # gmy = self.X[1::self.n][int((self.N-1)/2)] - y_ref[int((self.N-1)/2)]
             # gmtheta = self.X[2::self.n][int((self.N-1)/2)] - theta_ref[int((self.N-1)/2)]
             
-            offset = 1
-            gfx = self.X[0::self.n][self.N-offset] - x_ref[self.N-offset]
-            gfy = self.X[1::self.n][self.N-offset] - y_ref[self.N-offset]
-            gftheta = self.X[2::self.n][self.N-offset] - theta_ref[self.N-offset]
+
+            self.v_ref_obs_max = 0.5
+            self.v_ref_obs_min = 0.1
+            self.v_ref = min(max(0.6 - 0.01*obs_num, self.v_ref_obs_min),self.v_ref_obs_max)
+
+            offset = int(min(max(1, obs_num/2), self.N-1))
+
+            avg_dist = 0
+            for i in range(obs_num):
+                avg_dist += np.sqrt((obs_x[i] - self.X[0::self.n][0])**2 + (obs_y[i] - self.X[0::self.n][1])**2)
+            avg_dist = avg_dist/obs_num
+
+            print("Avg dist: ", avg_dist)
+            print("Offset: ", offset)
+            gfx = self.X[0::self.n][self.N-1] - x_ref[self.N-offset]
+            gfy = self.X[1::self.n][self.N-1] - y_ref[self.N-offset]
+            gftheta = self.X[2::self.n][self.N-1] - theta_ref[self.N-offset]
             self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
+            print("-----------------------V_ref: ", round(self.v_ref,2), " Obs: ", obs_num, "End: ", self.N-offset)
 
             safe = 0.3
             for i in range(obs_num):
@@ -272,10 +286,9 @@ class NMPC:
             # print("Constraints: ", self.g.shape)
             # --- Cost function --- 
                 
-            self.v_ref_obs_max = 0.5
-            self.v_ref_obs_min = 0.1
-            self.v_ref = min(max(0.6 - 0.01*obs_num, self.v_ref_obs_min),self.v_ref_obs_max)
-            print("-----------------------V_ref: ", round(self.v_ref,2), " Obs: ", obs_num)
+
+
+
             self.weight_velocity = 1
             self.weight_position_error = 10
             # self.weight_theta_error = 10
