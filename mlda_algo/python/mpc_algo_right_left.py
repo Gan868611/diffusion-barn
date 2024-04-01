@@ -108,7 +108,7 @@ class NMPC:
         gftheta = self.X[2::self.n][self.N-offset] - theta_ref[self.N-offset]
         self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
 
-        print("Constraints: ", self.g.shape)
+        print("Constraints: ", self.g.shape[0])
         # --- Cost function --- 
 
         J = 0
@@ -235,7 +235,7 @@ class NMPC:
             gftheta = self.X[2::self.n][self.N-offset] - theta_ref[self.N-offset]
             self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
 
-            safe = 0.275
+            safe = 0.3
             for i in range(obs_num):
                 gobs = (obs_x[i] - self.X[0::self.n][1:])**2 + (obs_y[i] - self.X[1::self.n][1:])**2 - safe**2
                 self.g = ca.vertcat(self.g, gobs)

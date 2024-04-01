@@ -26,6 +26,7 @@ class ROSNode():
         self.TOPIC_ODOM = "/odometry/filtered"
         self.TOPIC_MPC_PLAN = "/mpc_plan"
         self.TOPIC_CLOUD = "/front/odom/cloud"
+        self.TOPIC_MAP_CLOUD = "/map/cloud"
         
         self.pub_vel = rospy.Publisher(self.TOPIC_VEL, Twist, queue_size=1, latch=True)
         self.pub_mpc  = rospy.Publisher(self.TOPIC_MPC_PLAN, Path, queue_size=1)
@@ -34,6 +35,8 @@ class ROSNode():
         self.sub_global_plan = rospy.Subscriber(self.TOPIC_GLOBAL_PLAN, Path, self.callback_global_plan)
         self.sub_local_plan = rospy.Subscriber(self.TOPIC_LOCAL_PLAN, Path, self.callback_local_plan)
         self.sub_cloud = rospy.Subscriber(self.TOPIC_CLOUD, PointCloud2, self.callback_cloud)
+        self.sub_map_cloud = rospy.Subscriber(self.TOPIC_MAP_CLOUD, PointCloud2, self.callback_map_cloud)
+
 
         self.projector = lg.LaserProjection()
         self.cmd_vel = Twist()
@@ -61,12 +64,18 @@ class ROSNode():
         point_generator = pc2.read_points(data)
         self.obs_x = []
         self.obs_y = []
-        count = 0
         for point in point_generator:
             self.obs_x.append(point[0])
             self.obs_y.append(point[1])
-            count+=1
-        print("Obstacle points: ", count)
+
+    def callback_map_cloud(self, data):
+        point_generator = pc2.read_points(data)
+        self.map_x = []
+        self.map_y = []
+        for point in point_generator:
+            self.map_x.append(point[0])
+            self.map_y.append(point[1])
+
 
     def callback_odom(self,data):
         self.odometry = data
@@ -95,7 +104,7 @@ class ROSNode():
                 if i == 0:
                     self.theta_ref.append(theta)
         self.count+=1
-        print("Global poses used: ",len(self.og_x_ref), "/",len(data.poses))
+        # print("Global poses used: ",len(self.og_x_ref), "/",len(data.poses))
         # print("X_ref ",len(self.x_ref), " : ", self.x_ref)
         # print("Y_ref ",len(self.y_ref), " : ", self.y_ref)
         # print("Theta_ref ", len(self.theta_ref), " : ", self.theta_ref)
@@ -147,17 +156,22 @@ class ROSNode():
         
         self.x_ref = self.og_x_ref[k:]
         self.y_ref = self.og_y_ref[k:]
-        print("Before loop: ", len(self.x_ref))
+        # print("Before loop: ", len(self.x_ref))
+
+
+        all_obs_x = self.obs_x + self.map_x
+        all_obs_y = self.obs_y + self.map_y
+        print("Number of Obstacles: ", len(self.obs_x), len(self.map_x), len(all_obs_x))
         if len(self.x_ref) > self.mpc.N:
 
             # Setup the MPC
             self.mpc.setup(self.rate)
             # solve
             # print("Before solve: ", len(self.x_ref))
-            if len(self.obs_x) == 0:
+            if len(all_obs_x) == 0:
                 self.v_opt, self.w_opt= self.mpc.solve(self.x_ref, self.y_ref, self.theta_ref,self.X0) # Return the optimization variables
             else:
-                self.v_opt, self.w_opt= self.mpc.solve_obs(self.x_ref, self.y_ref, self.theta_ref, self.obs_x, self.obs_y, self.X0) # Return the optimization variables
+                self.v_opt, self.w_opt= self.mpc.solve_obs(self.x_ref, self.y_ref, self.theta_ref, all_obs_x, all_obs_y, self.X0) # Return the optimization variables
 
             # Control and take only the first step 
             self.publish_velocity(self.v_opt, self.w_opt)
