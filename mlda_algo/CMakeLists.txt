@@ -103,8 +103,6 @@ catkin_package(
 #  LIBRARIES mlda_algo
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
-rospy
-roscpp
 )
 
 ###########

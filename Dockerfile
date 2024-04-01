@@ -21,7 +21,7 @@ RUN pip3 install casadi
 RUN apt-get install -y ros-melodic-desktop-full ros-melodic-gmapping \
     ros-melodic-robot-localization ros-melodic-joint-state-publisher-gui ros-melodic-navigation \
     ros-melodic-hector-gazebo-plugins ros-melodic-velodyne-description ros-melodic-rosdoc-lite \
-    ros-melodic-twist-mux ros-melodic-sick-tim ros-melodic-teleop-twist-joy ros-melodic-pointgrey-camera-description \
+    ros-melodic-twist-mux ros-melodic-sick-tim ros-melodic-teleop-twist-joy ros-melodic-teleop-twist-keyboard ros-melodic-pointgrey-camera-description \
     ros-melodic-interactive-marker-twist-server ros-melodic-lms1xx ros-melodic-laser-pipeline \
 
     WORKDIR /jackal_ws
