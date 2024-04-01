@@ -43,9 +43,11 @@ class ROSNode():
         self.odometry = Odometry()
         self.global_plan = Path()
         self.local_plan = Path()
-        
+    
         self.rate = 10
         self.N = 20
+
+        print(" N: ", self.N)
         self.mpc = mpc_algo.NMPC(freq=self.rate, N=self.N)
         self.v_opt = 0 
         self.w_opt = 0

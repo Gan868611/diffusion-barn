@@ -25,6 +25,7 @@
         <remap from="cmd_vel" to="dump/cmd_vel" />
     </node>
     <node pkg="mlda_algo" type="scan_cloud_pub.py" name="scan_cloud_pub"></node>
+    <node pkg="mlda_algo" type="occupancy_cloud_pub.py" name="map_cloud_pub"></node>
 
     <!-- <node pkg="mlda_algo" type="algo.py" name="mlda_algo" output="screen"></node> -->
 </launch>

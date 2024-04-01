@@ -13,17 +13,24 @@ class NMPC:
         # self.L = rospy.get_param("/mlda/L")
         # Using rosparam
         # For each wheels
-        self.v_max = 1 # Max velocity [m/s]
-        self.v_min = -1 # Min velocity [m/s]
-        self.v_ref = 0.5 # Reference velocity [m/s]
+        self.v_max = 1# Max velocity [m/s]
+        self.v_min = -1# Min velocity [m/s]
+        # self.v_ref = 0.5 # Reference velocity [m/s]
 
 
         self.a_max = 1 # Max acceleration [m/s^2]
 
-        self.w_max = 2 # Max angular vel [rad/s]
-        self.w_min = -2 # Max angular vel [rad/s]
+        self.w_max = 3 # Max angular vel [rad/s]
+        self.w_min = -3 # Max angular vel [rad/s]
         
-        self.a_weights = 0.2
+        self.weight_velocity = 1
+        self.weight_position_error = 20
+        self.weight_cross_track_error = 0
+        self.weight_theta_error = 0
+        self.weight_acceleration = 0
+        self.weight_inital_theta_error = 0
+        self.weight_obs = 1
+
         self.N = N
         
         
@@ -101,24 +108,43 @@ class NMPC:
         # gmx = self.X[0::self.n][int((self.N-1)/2)] - x_ref[int((self.N-1)/2)]
         # gmy = self.X[1::self.n][int((self.N-1)/2)] - y_ref[int((self.N-1)/2)]
         # gmtheta = self.X[2::self.n][int((self.N-1)/2)] - theta_ref[int((self.N-1)/2)]
-        
-        offset = 1
-        gfx = self.X[0::self.n][self.N-offset] - x_ref[self.N-offset]
-        gfy = self.X[1::self.n][self.N-offset] - y_ref[self.N-offset]
-        gftheta = self.X[2::self.n][self.N-offset] - theta_ref[self.N-offset]
+            
+
+        def diff_angle(a1,a2):
+            diff = max(a1, a2) - min(a1, a2)
+            if diff > np.pi:
+                diff = 2*np.pi - diff
+            return diff
+        ref = theta_ref[self.N]
+        idx = 0 
+        for i in range(self.N, min(len(x_ref), len(theta_ref))):
+            # print(i, " Diff angle: ", diff_angle(theta_ref[i],ref))
+            idx = i
+            if diff_angle(theta_ref[i],ref) > np.pi/25:
+                break
+
+        self.v_ref = 1
+        print("IDX ", idx, len(theta_ref), len(x_ref), len(y_ref), self.v_ref)
+
+        # idx = self.N - 1
+        gfx = self.X[0::self.n][self.N-1] - x_ref[idx]
+        gfy = self.X[1::self.n][self.N-1] - y_ref[idx]
+        gftheta = self.X[2::self.n][self.N-1] - theta_ref[idx]
         self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
+
 
         print("Constraints: ", self.g.shape[0])
         # --- Cost function --- 
 
-        J = 0
-        self.weight_velocity = 1
-        self.weight_position_error = 20
-        self.weight_cross_track_error = 1
-        self.weight_theta_error = 1
-        self.weight_acceleration = 0
+        self.weight_velocity = 10
+        # self.weight_minimize_angular = 0
+        self.weight_position_error = 1
+        # self.weight_cross_track_error = 2
+        # self.weight_theta_error = 2
+        # self.weight_inital_theta_error = 10
 
-        self.weight_inital_theta_error = 1
+
+        J = 0
         initial_theta_error = (self.X[2::self.n][1] - theta_ref[1])**2
         J += self.weight_inital_theta_error*initial_theta_error
         for i in range(self.N):
@@ -131,6 +157,9 @@ class NMPC:
             # Reference velocity cost
             reference_velocity_cost = (self.X[3::self.n][i] - self.v_ref)**2 + (self.X[4::self.n][i] - self.v_ref)**2
             # reference_velocity_cost = 0
+
+            # Minimize angular velocity
+            angular_velocity_cost = -(self.X[3::self.n][i] - self.X[4::self.n][i])**2
 
             # Cross-track Error cost
             cross_track_error_cost = -(x_ref[i] - self.X[0::self.n][i])*(np.sin(theta_ref[i])) + (y_ref[i] - self.X[1::self.n][i])*(np.cos(theta_ref[i]))
@@ -240,19 +269,23 @@ class NMPC:
                 gobs = (obs_x[i] - self.X[0::self.n][1:])**2 + (obs_y[i] - self.X[1::self.n][1:])**2 - safe**2
                 self.g = ca.vertcat(self.g, gobs)
 
-            print("Constraints: ", self.g.shape)
+            # print("Constraints: ", self.g.shape)
             # --- Cost function --- 
+                
+            self.v_ref_obs_max = 0.5
+            self.v_ref_obs_min = 0.1
+            self.v_ref = min(max(0.6 - 0.01*obs_num, self.v_ref_obs_min),self.v_ref_obs_max)
+            print("-----------------------V_ref: ", round(self.v_ref,2), " Obs: ", obs_num)
+            self.weight_velocity = 1
+            self.weight_position_error = 10
+            # self.weight_theta_error = 10
+            self.weight_inital_theta_error = 0
 
             J = 0
-            self.weight_velocity = 5
-            self.weight_position_error = 1
-            self.weight_cross_track_error = 1
-            self.weight_theta_error = 1
-            self.weight_acceleration = 0
 
-            self.weight_inital_theta_error = 1
             initial_theta_error = (self.X[2::self.n][1] - theta_ref[1])**2
             J += self.weight_inital_theta_error*initial_theta_error
+
             for i in range(self.N):
                 # Position Error cost
                 position_error_cost = (self.X[0::self.n][i] - x_ref[i])**2 + (self.X[1::self.n][i] - y_ref[i])**2
@@ -263,6 +296,7 @@ class NMPC:
                 # Reference velocity cost
                 reference_velocity_cost = (self.X[3::self.n][i] - self.v_ref)**2 + (self.X[4::self.n][i] - self.v_ref)**2
                 # reference_velocity_cost = 0
+
 
                 # Cross-track Error cost
                 cross_track_error_cost = -(x_ref[i] - self.X[0::self.n][i])*(np.sin(theta_ref[i])) + (y_ref[i] - self.X[1::self.n][i])*(np.cos(theta_ref[i]))

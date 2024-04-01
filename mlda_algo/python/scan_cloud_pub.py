@@ -69,7 +69,7 @@ class LaserScanToPointCloud():
                   PointField('intensity', 12, PointField.FLOAT32, 1)]
         points = []
 
-        safe = 1 # [m]
+        safe = 1.5 # [m]
         count = 0
         for point in point_generator:
             if count % 15 == 0:

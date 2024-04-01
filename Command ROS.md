@@ -1,5 +1,5 @@
-
 # Shell
+
 ```shell
 
 python3 /home/mlda/jackal_ws/src/mlda-barn-2024/run.py --world_idx 0 --type kul
@@ -13,13 +13,21 @@ python3 /home/mlda/jackal_ws/src/mlda-barn-2024/init.py --world_idx 0
 
 ```
 
-# Test 
+# Test
+
 ```sh
 python3 test_loop.py -s 0 -t 300 -e 1 -r -g -o demo
 
 ```
 
-# Inspect 
+# Inspect
+
 ```sh
 python run_init.py --world_idx 250 --rviz --type kul
+```
+
+# ROS
+
+```shell
+rosservice call /move_base/clear_costmaps "{}"
 ```
