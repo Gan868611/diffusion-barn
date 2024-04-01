@@ -194,7 +194,7 @@ if __name__ == "__main__":
     # Navigation metric: 1_success *  optimal_time / clip(actual_time, 4 * optimal_time, 8 * optimal_time)
     optimal_time = path_length / 2
     actual_time = curr_time - start_time
-    nav_metric = int(success) * optimal_time / np.clip(actual_time, 4 * optimal_time, 8 * optimal_time)
+    nav_metric = int(success) * optimal_time / np.clip(actual_time, 2 * optimal_time, 8 * optimal_time)
     print("Navigation metric: %.4f" %(nav_metric))
     
     timeout = (curr_time - start_time)>=100
