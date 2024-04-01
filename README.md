@@ -19,14 +19,13 @@ docker pull mldarobotics/barn2024:april1
 Start the docker container named `barn` in the background. Use VSCode `Dev Container` extension to connect to the running container
 
 ```shell
-xhost+ # Allow connections to X server
+xhost + # Allow connections to X server
 
 docker run --rm -dt --name barn \
   -e DISPLAY=$DISPLAY \
   -e QT_X11_NO_MITSHM=1 \
   -e LIBGL_ALWAYS_SOFTWARE=1 \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
-  -v /path/to/mlda-barn-2024:/jackal_ws/src/mlda-barn-2024 \
   mldarobotics/barn2024:april1
 ```
 
