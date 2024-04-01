@@ -38,5 +38,10 @@ python3 run.py --world_idx 0
 ```
 
 # Singularity Image
+We use Go 1.20 and Singularity 4.0.2
 
+- On Ubuntu 18.04 Machine
+We can build and run the Singularity image
+
+- On Ubuntu 22.04 Machine 
 We can build the Singularity image but it cannot execute the `run.py` program through it due to `GLIBC=2.34 missing` error and we cannot fix. In the `.def` file, we also installed all the necessary `ros-melodic-*` packages instead of relying on `rosdep`
