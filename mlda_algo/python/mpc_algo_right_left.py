@@ -14,14 +14,14 @@ class NMPC:
         # Using rosparam
         # For each wheels
         self.v_max = 1# Max velocity [m/s]
-        self.v_min = -1# Min velocity [m/s]
-        # self.v_ref = 0.5 # Reference velocity [m/s]
+        self.v_min = -0.5# Min velocity [m/s]
+        self.v_ref = 0.5 # Reference velocity [m/s]
 
 
         self.a_max = 1 # Max acceleration [m/s^2]
 
-        self.w_max = 3 # Max angular vel [rad/s]
-        self.w_min = -3 # Max angular vel [rad/s]
+        self.w_max = 1 # Max angular vel [rad/s]
+        self.w_min = -1 # Max angular vel [rad/s]
         
         self.weight_velocity = 1
         self.weight_position_error = 20
@@ -228,14 +228,37 @@ class NMPC:
     def solve_obs(self, x_ref, y_ref, theta_ref, obs_x, obs_y, X0):
             start_time = time.time()
 
-            
-            # === Set constraints bound
-            per_step_constraints = 9
-            init_value_constraints = 5
-            final_value_contraints = 3
-
             obs_num = len(obs_x)
             obs_constraints = obs_num*(self.N-1)
+
+            obs_dist = []
+            for i in range(obs_num):
+                obs_dist.append(np.sqrt((obs_x[i] - x_ref[0])**2 + (obs_y[i] - y_ref[0])**2))
+            obs_dist = np.array(obs_dist)
+
+            careful = False
+            safe_dist = 0.4
+            if np.count_nonzero(obs_dist < safe_dist) > 0: #m
+                careful = True
+                final_value_contraints = 0
+                print("---------------------===========CAREFUL")
+                self.weight_velocity = 5
+                self.weight_position_error = 5
+                self.weight_theta_error = 0
+                self.v_ref = 0.1
+            else:
+
+                self.weight_velocity = 1
+                self.weight_position_error = 10
+                # self.weight_theta_error = 10
+                self.weight_inital_theta_error = 0
+                final_value_contraints = 3
+            # === Set constraints bound
+            per_step_constraints = 9
+            init_value_constraints = 5 
+            # final_value_contraints = 0
+
+
 
             self.lbg = np.zeros((self.N - 1) * per_step_constraints + init_value_constraints + final_value_contraints + obs_constraints)
             self.ubg = np.zeros((self.N - 1) * per_step_constraints + init_value_constraints + final_value_contraints + obs_constraints)
@@ -259,24 +282,13 @@ class NMPC:
             # gmtheta = self.X[2::self.n][int((self.N-1)/2)] - theta_ref[int((self.N-1)/2)]
             
 
-            self.v_ref_obs_max = 0.5
-            self.v_ref_obs_min = 0.1
-            self.v_ref = min(max(0.6 - 0.01*obs_num, self.v_ref_obs_min),self.v_ref_obs_max)
 
-            offset = int(min(max(1, obs_num/2), self.N-1))
-
-            avg_dist = 0
-            for i in range(obs_num):
-                avg_dist += np.sqrt((obs_x[i] - self.X[0::self.n][0])**2 + (obs_y[i] - self.X[0::self.n][1])**2)
-            avg_dist = avg_dist/obs_num
-
-            print("Avg dist: ", avg_dist)
-            print("Offset: ", offset)
-            gfx = self.X[0::self.n][self.N-1] - x_ref[self.N-offset]
-            gfy = self.X[1::self.n][self.N-1] - y_ref[self.N-offset]
-            gftheta = self.X[2::self.n][self.N-1] - theta_ref[self.N-offset]
-            self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
-            print("-----------------------V_ref: ", round(self.v_ref,2), " Obs: ", obs_num, "End: ", self.N-offset)
+            if not careful:
+                offset = self.N-1
+                gfx = self.X[0::self.n][offset] - x_ref[offset]
+                gfy = self.X[1::self.n][offset] - y_ref[offset]
+                gftheta = self.X[2::self.n][offset] - theta_ref[offset]
+                self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
 
             safe = 0.3
             for i in range(obs_num):
@@ -285,14 +297,7 @@ class NMPC:
 
             # print("Constraints: ", self.g.shape)
             # --- Cost function --- 
-                
-
-
-
-            self.weight_velocity = 1
-            self.weight_position_error = 10
-            # self.weight_theta_error = 10
-            self.weight_inital_theta_error = 0
+            
 
             J = 0
 

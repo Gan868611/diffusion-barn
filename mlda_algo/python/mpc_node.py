@@ -147,57 +147,58 @@ class ROSNode():
     def run(self):
         # try:
         # Clear up to the closest point
-        k = 0
-        dist = [1]*len(self.og_x_ref)
-        min_dist = 1
-        for i in range(len(self.og_x_ref)):
-            dist[i] = math.sqrt((self.og_x_ref[i] - self.odometry.pose.pose.position.x)**2 + (self.og_y_ref[i] - self.odometry.pose.pose.position.y)**2)
-            if dist[i] <= min_dist:
-                k = i
-                min_dist = dist[i]
-        
-        self.x_ref = self.og_x_ref[k:]
-        self.y_ref = self.og_y_ref[k:]
-        # print("Before loop: ", len(self.x_ref))
-
-
-        all_obs_x = self.obs_x + self.map_x
-        all_obs_y = self.obs_y + self.map_y
-        print("Number of Obstacles: ", len(self.obs_x), len(self.map_x), len(all_obs_x))
-        if len(self.x_ref) > self.mpc.N:
-
-            # Setup the MPC
-            self.mpc.setup(self.rate)
-            # solve
-            # print("Before solve: ", len(self.x_ref))
-            if len(all_obs_x) == 0:
-                self.v_opt, self.w_opt= self.mpc.solve(self.x_ref, self.y_ref, self.theta_ref,self.X0) # Return the optimization variables
-            else:
-                self.v_opt, self.w_opt= self.mpc.solve_obs(self.x_ref, self.y_ref, self.theta_ref, all_obs_x, all_obs_y, self.X0) # Return the optimization variables
-
-            # Control and take only the first step 
-            self.publish_velocity(self.v_opt, self.w_opt)
-
+        try:
+            k = 0
+            dist = [1]*len(self.og_x_ref)
+            min_dist = 1
+            for i in range(len(self.og_x_ref)):
+                dist[i] = math.sqrt((self.og_x_ref[i] - self.odometry.pose.pose.position.x)**2 + (self.og_y_ref[i] - self.odometry.pose.pose.position.y)**2)
+                if dist[i] <= min_dist:
+                    k = i
+                    min_dist = dist[i]
             
-            # Get from the MPC results
-            mpc_x_traj = self.mpc.opt_states[0::self.mpc.n]
-            mpc_y_traj = self.mpc.opt_states[1::self.mpc.n]
-            # print(type(mpc_x_traj), mpc_x_traj.shape)
-            self.publish_trajectory(mpc_x_traj, mpc_y_traj)
+            self.x_ref = self.og_x_ref[k:]
+            self.y_ref = self.og_y_ref[k:]
+            # print("Before loop: ", len(self.x_ref))
+
+
+            all_obs_x = self.obs_x + self.map_x
+            all_obs_y = self.obs_y + self.map_y
+            print("Number of Obstacles: ", len(self.obs_x), len(self.map_x), len(all_obs_x))
+            if len(self.x_ref) > self.mpc.N:
+
+                # Setup the MPC
+                self.mpc.setup(self.rate)
+                # solve
+                # print("Before solve: ", len(self.x_ref))
+                if len(all_obs_x) == 0:
+                    self.v_opt, self.w_opt= self.mpc.solve(self.x_ref, self.y_ref, self.theta_ref,self.X0) # Return the optimization variables
+                else:
+                    self.v_opt, self.w_opt= self.mpc.solve_obs(self.x_ref, self.y_ref, self.theta_ref, all_obs_x, all_obs_y, self.X0) # Return the optimization variables
+
+                # Control and take only the first step 
+                self.publish_velocity(self.v_opt, self.w_opt)
+
+                
+                # Get from the MPC results
+                mpc_x_traj = self.mpc.opt_states[0::self.mpc.n]
+                mpc_y_traj = self.mpc.opt_states[1::self.mpc.n]
+                # print(type(mpc_x_traj), mpc_x_traj.shape)
+                self.publish_trajectory(mpc_x_traj, mpc_y_traj)
 
 
 
-            # self.x_ref = self.x_ref[1:]
-            # self.y_ref = self.y_ref[1:]
+                # self.x_ref = self.x_ref[1:]
+                # self.y_ref = self.y_ref[1:]
 
-            # print("K: ", k)
-            # print(dist)
+                # print("K: ", k)
+                # print(dist)
 
-        else:
-            print("Stopped", len(self.x_ref))
-            self.publish_velocity(0,0)
-        # except Exception as e:
-        #     rospy.logerr(e)
+            else:
+                print("Stopped", len(self.x_ref))
+                self.publish_velocity(0,0)
+        except Exception as e:
+            rospy.logerr(e)
 
 
 if __name__ =="__main__":

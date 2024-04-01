@@ -125,7 +125,7 @@ class OccupancyToCloud():
         L_bound = self.bounded_angle(half_fov + yaw)
         R_bound = self.bounded_angle(-half_fov + yaw)
 
-        sparsity = 0.1
+        sparsity = 0.05
         points_angle = np.arange(-np.pi, np.pi, sparsity)
         points_dist = np.inf*np.ones(points_angle.shape)
         points_coord = np.zeros((points_angle.shape[0], 2))
@@ -157,6 +157,12 @@ class OccupancyToCloud():
                     points_coord[idx][0] = i*self.map_res + top_left_map[0] + self.map_origin[0]
                     points_coord[idx][1] = j*self.map_res + top_left_map[1] + self.map_origin[1]
                     points_dist[idx] = dist
+
+                # if box_grid[j,i] == 100 and is_bounded:
+                    # x = i*self.map_res + top_left_map[0] + self.map_origin[0]
+                    # y = j*self.map_res + top_left_map[1] + self.map_origin[1]
+                    # points.append([x, y, 0, 1])
+
 
         for i in range(len(points_angle)):
             if points_dist[i] != np.inf:
