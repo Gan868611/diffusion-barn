@@ -7,6 +7,9 @@ The original readme file is in [README_BARN.md](./README_BARN.md)
 # Navigation Stack
 
 Launch file at `./jackal_helper/launch/move_base_mlda.launch`
+Source files at `./mlda_algo`
+
+We also create a `run_rviz.py` to launch `move_base_mlda_rviz.launch` to visualize and troubleshoot
 
 # Docker Image
 
@@ -21,10 +24,21 @@ Start the docker container named `barn` in the background. Use VSCode `Dev Conta
 ```shell
 xhost + # Allow connections to X server
 
+# No Nvidia Container
 docker run --rm -dt --name barn \
   -e DISPLAY=$DISPLAY \
   -e QT_X11_NO_MITSHM=1 \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  mldarobotics/barn2024:april1
+
+
+# Nvidia Container
+docker run --rm -dt --name barn \
+  --gpus all \
+  -e DISPLAY=":1" \
+  -e QT_X11_NO_MITSHM=1 \
   -e LIBGL_ALWAYS_SOFTWARE=1 \
+  -e NVIDIA_DRIVER_CAPABILITIES=all \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
   mldarobotics/barn2024:april1
 ```
@@ -39,6 +53,15 @@ python3 run.py --world_idx 0
 
 # Singularity Image
 We use Go 1.20 and Singularity 4.0.2
+```shell
+# Build image name 'nav_competition_image.sif'
+sudo singularity build --notest nav_competition_image.sif Singularityfile.def
+
+
+# Run
+./singularity_run.sh ./nav_competition_image.sif python3 run.py --world_idx 0
+```
+
 
 - On Ubuntu 18.04 Machine
 We can build and run the Singularity image
