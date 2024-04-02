@@ -1,4 +1,11 @@
+
 # MLDA_EEE
+
+
+
+https://github.com/MLDA-NTU/mlda-barn-2024/assets/32756835/d21bdda6-0903-49c4-aa32-c9ca440c276b
+
+
 
 This is the repository for the proposed solution of Team MLDA_EEE (Machine Learning & Data Analytics) from Nanyang Technological University, Singapore
 
