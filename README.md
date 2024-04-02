@@ -66,7 +66,7 @@ docker run --rm -dt --name barn \
 # Nvidia Container
 docker run --rm -dt --name barn \
   --gpus all \
-  -e DISPLAY=":1" \
+  -e DISPLAY="$DISPLAY" \
   -e QT_X11_NO_MITSHM=1 \
   -e LIBGL_ALWAYS_SOFTWARE=1 \
   -e NVIDIA_DRIVER_CAPABILITIES=all \
