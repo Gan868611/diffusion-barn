@@ -13,7 +13,7 @@ We also create a `run_rviz.py` to launch `move_base_mlda_rviz.launch` to visuali
 
 # Container Environment
 
-# Singularity Image
+## Singularity Image
 We use Go 1.20 and Singularity 4.0.2
 ```shell
 # Build image name 'nav_competition_image.sif'
@@ -81,7 +81,7 @@ python3 run_rviz.py --world_idx 0 --gui
 
 
 
-# Change of Gazebo Viewpoint
+# Gazebo World
 All of 300 worlds `.world` files have their initial camera angle changed for ease of viewing and troubleshooting
 
 ```xml
