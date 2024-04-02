@@ -14,7 +14,9 @@ We also create a `run_rviz.py` to launch `move_base_mlda_rviz.launch` to visuali
 # Container Environment
 
 ## Singularity Image
+
 We use Go 1.20 and Singularity 4.0.2
+
 ```shell
 # Build image name 'nav_competition_image.sif'
 sudo singularity build --notest nav_competition_image.sif Singularityfile.def
@@ -24,12 +26,11 @@ sudo singularity build --notest nav_competition_image.sif Singularityfile.def
 ./singularity_run.sh ./nav_competition_image.sif python3 run.py --world_idx 0
 ```
 
-
 - On Ubuntu 18.04 Machine
 
 We can build and run the Singularity image
 
-- On Ubuntu 22.04 Machine 
+- On Ubuntu 22.04 Machine
 
 We can build the Singularity image but it cannot execute the `run.py` program through it due to `GLIBC=2.34 missing` error and we cannot fix. In the `.def` file, we also installed all the necessary `ros-melodic-*` packages instead of relying on `rosdep`
 
@@ -44,7 +45,8 @@ docker pull mldarobotics/barn2024:april1
 Start the docker container named `barn` in the background. Use VSCode `Dev Container` extension to connect to the running container
 
 ```shell
-xhost + # Allow connections to X server
+# Allow GUI to be displayed
+xhost +
 
 # No Nvidia Container
 docker run --rm -dt --name barn \
@@ -78,10 +80,8 @@ python3 run.py --world_idx 0 --gui
 python3 run_rviz.py --world_idx 0 --gui
 ```
 
-
-
-
 # Gazebo World
+
 All of 300 worlds `.world` files have their initial camera angle changed for ease of viewing and troubleshooting
 
 ```xml
