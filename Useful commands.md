@@ -3,7 +3,7 @@
 ## Build from Dockerfile
 
 ```shell
-docker build . -t barn:april1
+docker build . -t barn:april1 --no-cache
 
 sudo docker run --rm -dt --name barn \
 	--gpus all \
