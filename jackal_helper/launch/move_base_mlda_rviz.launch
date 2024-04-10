@@ -26,6 +26,6 @@
     </node>
     <node pkg="mlda_algo" type="scan_cloud_pub.py" name="scan_cloud_pub"></node>
     <node pkg="mlda_algo" type="occupancy_cloud_pub.py" name="map_cloud_pub"></node>
-    <node pkg="mlda_algo" type="mpc_node.py" name="mlda_algo"></node>
+    <!-- <node pkg="mlda_algo" type="mpc_node.py" name="mlda_algo"></node> -->
     <node type="rviz" name="rviz" pkg="rviz" args="-d $(find jackal_helper)/launch/config_file.rviz" />
 </launch>

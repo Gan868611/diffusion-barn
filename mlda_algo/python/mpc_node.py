@@ -44,9 +44,8 @@ class ROSNode():
         self.global_plan = Path()
         self.local_plan = Path()
     
-        self.rate = 10
+        self.rate = 5
         self.N = 20
-
         print(" N: ", self.N)
         self.mpc = mpc_algo.NMPC(freq=self.rate, N=self.N)
         self.v_opt = 0 
@@ -100,12 +99,14 @@ class ROSNode():
                 self.og_x_ref = [pose.pose.position.x for pose in self.global_plan.poses[::2]]
                 self.og_y_ref = [pose.pose.position.y for pose in self.global_plan.poses[::2]]
             self.theta_ref = []
+            center_heading = self.X0[2]
             for i in range(len(self.og_x_ref)-1):
                 theta = math.atan2((self.og_y_ref[i+1] - self.og_y_ref[i]),(self.og_x_ref[i+1] - self.og_x_ref[i]))
-                self.theta_ref.append(theta)
+                theta_preprocessed = self.heading_preprocess_radian(center_heading, theta)
+                self.theta_ref.append(theta_preprocessed)
                 if i == 0:
-                    self.theta_ref.append(theta)
-        self.count+=1
+                    self.theta_ref.append(theta_preprocessed)
+                center_heading = theta_preprocessed
         # print("Global poses used: ",len(self.og_x_ref), "/",len(data.poses))
         # print("X_ref ",len(self.x_ref), " : ", self.x_ref)
         # print("Y_ref ",len(self.y_ref), " : ", self.y_ref)
@@ -114,6 +115,20 @@ class ROSNode():
     def callback_local_plan(self, data):
         self.local_plan = data
         # print("Local")
+
+    def heading_preprocess_radian(self,center, target):
+        min = center - np.pi
+        max = center + np.pi
+        if target < min:
+            while target < min:
+                # print('Processed')
+                target += 2*np.pi
+        elif target > max:
+            while target > max:
+                # print('Processed')
+                target -= 2*np.pi
+        return target
+
 
     def quaternion_to_yaw(self, orientation):
     # Convert quaternion orientation data to yaw angle of robot
@@ -168,12 +183,14 @@ class ROSNode():
             if len(self.x_ref) > self.mpc.N:
 
                 # Setup the MPC
+
                 self.mpc.setup(self.rate)
-                # solve
                 # print("Before solve: ", len(self.x_ref))
                 if len(all_obs_x) == 0:
+
                     self.v_opt, self.w_opt= self.mpc.solve(self.x_ref, self.y_ref, self.theta_ref,self.X0) # Return the optimization variables
                 else:
+
                     self.v_opt, self.w_opt= self.mpc.solve_obs(self.x_ref, self.y_ref, self.theta_ref, all_obs_x, all_obs_y, self.X0) # Return the optimization variables
 
                 # Control and take only the first step 
@@ -205,7 +222,7 @@ if __name__ =="__main__":
     rospy.init_node("nmpc")
     rospy.loginfo("Non-Linear MPC Node running")
     node = ROSNode()
-    pause = rospy.Rate(node.rate)
+    pause = rospy.Rate(10)
     time.sleep(1)
     while not rospy.is_shutdown():
         node.run()

@@ -4,7 +4,7 @@ import numpy as np
 import time
 
 class NMPC:
-    def __init__(self, freq = 20, N = 20):
+    def __init__(self, freq = 10, N = 20):
         self.f = freq # Controller frequency [Hz]
         self.h = 1/self.f
         # self.rate = rospy.Rate(self.f)
@@ -14,7 +14,7 @@ class NMPC:
         # Using rosparam
         # For each wheels
         self.v_max = 1# Max velocity [m/s]
-        self.v_min = -0.5# Min velocity [m/s]
+        self.v_min = -1# Min velocity [m/s]
         self.v_ref = 0.5 # Reference velocity [m/s]
 
 
@@ -39,7 +39,9 @@ class NMPC:
         pass
     
     def setup(self, rate):
+        self.g = None
         self.h = 1/rate
+        print("Rate: ", rate)
         # --- State and control variables ---
         # Variables
         # X = [x0, y0, theta0, vr0, vl0, ar0, al0, (...), xN, yN, thetaN, vrN, vlN, arN, alN]
@@ -73,11 +75,14 @@ class NMPC:
         gw_max = self.w_max - ((self.X[3::self.n][1:] - self.X[4::self.n][1:])/self.L)
 
 
+        #Const velocity for N = 10
+        # gvr_const = self.X[3::self.n][0] - 0.5
+        # gvl_const = self.X[4::self.n][0] - 0.5
+
+
         ### Each of the term above has N-1 columns   
         self.g = ca.vertcat(gx, gy, gtheta, gv_r, gv_l, gv_min, gv_max, gw_min, gw_max)
         
-
-
         ### This is not dynamic contraints, because they only relate the existing optimization variables
     
     def solve(self, x_ref, y_ref, theta_ref, X0):
@@ -85,7 +90,7 @@ class NMPC:
 
         
         # === Set constraints bound
-        per_step_constraints = 9
+        per_step_constraints = 9  # 9 initially
         init_value_constraints = 5
         final_value_contraints = 3
 
@@ -237,22 +242,23 @@ class NMPC:
             obs_dist = np.array(obs_dist)
 
             careful = False
-            safe_dist = 0.4
-            if np.count_nonzero(obs_dist < safe_dist) > 0: #m
+            careful_dist = 0.5
+            if np.count_nonzero(obs_dist < careful_dist) > 0:
                 careful = True
                 final_value_contraints = 0
                 print("---------------------===========CAREFUL")
-                self.weight_velocity = 5
-                self.weight_position_error = 5
+                self.weight_velocity = 1
+                self.weight_position_error = 10
                 self.weight_theta_error = 0
                 self.v_ref = 0.1
             else:
-
                 self.weight_velocity = 1
                 self.weight_position_error = 10
                 # self.weight_theta_error = 10
                 self.weight_inital_theta_error = 0
                 final_value_contraints = 3
+
+                
             # === Set constraints bound
             per_step_constraints = 9
             init_value_constraints = 5 
@@ -289,10 +295,13 @@ class NMPC:
                 gfy = self.X[1::self.n][offset] - y_ref[offset]
                 gftheta = self.X[2::self.n][offset] - theta_ref[offset]
                 self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
-
-            safe = 0.3
+            else:
+                # self.weight_initial_theta_error = 2
+                # self.weight_velocity = 10
+                pass
+            collision_check = 0.35
             for i in range(obs_num):
-                gobs = (obs_x[i] - self.X[0::self.n][1:])**2 + (obs_y[i] - self.X[1::self.n][1:])**2 - safe**2
+                gobs = (obs_x[i] - self.X[0::self.n][1:])**2 + (obs_y[i] - self.X[1::self.n][1:])**2 - collision_check**2
                 self.g = ca.vertcat(self.g, gobs)
 
             # print("Constraints: ", self.g.shape)
