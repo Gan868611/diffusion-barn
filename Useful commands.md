@@ -29,13 +29,23 @@ docker push mldarobotics/barn2024:april1
 ```shell
 docker run --rm -dt --name barn \
 	--gpus all \
-	-e DISPLAY=":1" \
+	-e DISPLAY="$DISPLAY" \
+	-e QT_X11_NO_MITSHM=1 \
+	-e LIBGL_ALWAYS_SOFTWARE=1 \
+	-e NVIDIA_DRIVER_CAPABILITIES=all \
+	-v /tmp/.X11-unix:/tmp/.X11-unix \
+	-v ~/mlda-barn-2024:/jackal_ws/src/mlda-barn-2024 \
+	mldarobotics/barn2024:april1
+
+
+docker run --rm -dt --name barn \
+	--gpus all \
+	-e DISPLAY="$DISPLAY" \
 	-e QT_X11_NO_MITSHM=1 \
 	-e LIBGL_ALWAYS_SOFTWARE=1 \
 	-e NVIDIA_DRIVER_CAPABILITIES=all \
 	-v /tmp/.X11-unix:/tmp/.X11-unix \
 	mldarobotics/barn2024:april1
-
 
 docker run --rm -dt --name barn \
 	-e DISPLAY=":1" \
