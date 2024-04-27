@@ -10,11 +10,11 @@ RUN git clone https://github.com/jackal/jackal.git --branch melodic-devel
 RUN git clone https://github.com/jackal/jackal_simulator.git --branch melodic-devel
 RUN git clone https://github.com/jackal/jackal_desktop.git --branch melodic-devel
 RUN git clone https://github.com/MLDA-NTU/mlda-barn-2024.git --branch Soft-Deadline
-RUN git clone https://gitlab.kuleuven.be/u0144428/free_space_motion_tube.git --branch barn2023
+# RUN git clone https://gitlab.kuleuven.be/u0144428/free_space_motion_tube.git --branch barn2023
 
-WORKDIR /jackal_ws/src/free_space_motion_tube
+WORKDIR /jackal_ws/src/mlda-barn-2024/free_space_motion_tube
 RUN mkdir -p build
-WORKDIR /jackal_ws/src/free_space_motion_tube/build
+WORKDIR /jackal_ws/src/mlda-barn-2024/free_space_motion_tube/build
 RUN cmake ..
 RUN make -j8 && make install
 
