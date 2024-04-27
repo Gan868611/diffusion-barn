@@ -64,7 +64,7 @@ if __name__ == "__main__":
         'roslaunch',
         launch_file,
         'world_name:=' + world_name,
-        'gui:=' + ("true" if args.gui else "false")
+        'gui:=true'
     ])
     time.sleep(5)  # sleep to wait until the gazebo being created
     

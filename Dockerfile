@@ -10,11 +10,17 @@ RUN git clone https://github.com/jackal/jackal.git --branch melodic-devel
 RUN git clone https://github.com/jackal/jackal_simulator.git --branch melodic-devel
 RUN git clone https://github.com/jackal/jackal_desktop.git --branch melodic-devel
 RUN git clone https://github.com/MLDA-NTU/mlda-barn-2024.git --branch Soft-Deadline
+RUN git clone https://gitlab.kuleuven.be/u0144428/free_space_motion_tube.git --branch barn2023
+
+WORKDIR /jackal_ws/src/free_space_motion_tube
+RUN mkdir -p build
+WORKDIR /jackal_ws/src/free_space_motion_tube/build
+RUN cmake ..
+RUN make -j8 && make install
 
 RUN apt-get update && apt-get install -y python3-pip build-essential
 RUN pip3 install --upgrade pip
-RUN pip3 install defusedxml rospkg netifaces numpy jupyter scipy matplotlib
-RUN pip3 install casadi
+RUN pip3 install defusedxml rospkg netifaces numpy jupyter scipy matplotlib casadi
 
 # Install ROS components
 RUN apt-get install -y ros-melodic-desktop-full ros-melodic-gmapping \
