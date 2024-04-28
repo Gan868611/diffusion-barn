@@ -20,6 +20,10 @@
 
 - Decrease acceleration is at odd with following the position of the trajectory
 
+- Sometimes, putting the maximum hinder the solver from finding a better solution
+
+  - Trade off between the "obvious" fast solution and safety
+
 - Constraining the last horizon step
 
   - Might result in the bending of the mpc plan if it wants to match a certain velocity reference, because going off course will give higher velocity

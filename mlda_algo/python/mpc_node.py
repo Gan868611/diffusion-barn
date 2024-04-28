@@ -179,6 +179,7 @@ class ROSNode:
         try:
             min_dist_idx = 0
             min_dist = 1
+            inner_dist = 0.0
             outer_dist = 0.05
             outer_dist_idx = 0
 
@@ -188,15 +189,17 @@ class ROSNode:
                     (self.og_x_ref[i] - self.odometry.pose.pose.position.x) ** 2
                     + (self.og_y_ref[i] - self.odometry.pose.pose.position.y) ** 2
                 )
-                if dist[i] <= min_dist and outer_dist < dist[i]:
+                if dist[i] <= min_dist and inner_dist < dist[i]:
                     min_dist_idx = i
                     min_dist = dist[i]
                 if min_dist_idx < i and dist[i] > outer_dist:
                     outer_dist_idx = i
                     break
 
-            self.x_ref = [self.og_x_ref[min_dist_idx]] + self.og_x_ref[outer_dist_idx:]
-            self.y_ref = [self.og_y_ref[min_dist_idx]] + self.og_y_ref[outer_dist_idx:]
+            # self.x_ref = [self.og_x_ref[min_dist_idx]] + self.og_x_ref[outer_dist_idx:]
+            # self.y_ref = [self.og_y_ref[min_dist_idx]] + self.og_y_ref[outer_dist_idx:]
+            self.x_ref = self.og_x_ref[min_dist_idx:]
+            self.y_ref = self.og_y_ref[min_dist_idx:]
 
             all_obs_x = self.obs_x + self.map_x
             all_obs_y = self.obs_y + self.map_y

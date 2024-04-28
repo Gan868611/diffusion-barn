@@ -56,11 +56,11 @@ class NMPC:
             self.weight_time_elastic = 0
 
             self.final_value_contraints = 3
-            self.v_ref = 1
-            self.v_max_indiv = 1
-            self.v_min_indiv = -1
-            self.v_max_total = 1
-            self.v_min_total = -1
+            self.v_ref = 0.8
+            self.v_max_indiv = 0.8
+            self.v_min_indiv = -0.5
+            self.v_max_total = 0.8
+            self.v_min_total = -0.5
         elif mode == "obs":
             self.weight_velocity_ref = 1
             self.weight_max_velocity = 0
@@ -77,9 +77,9 @@ class NMPC:
             self.v_ref = 0.5
 
             self.v_max_indiv = 0.8
-            self.v_min_indiv = -0.8
+            self.v_min_indiv = -0.5
             self.v_max_total = 0.8
-            self.v_min_total = -0.8
+            self.v_min_total = -0.5
         elif mode == "careful":
             self.weight_velocity_ref = 1
             self.weight_max_velocity = 0
@@ -95,10 +95,10 @@ class NMPC:
             self.final_value_contraints = 0
             self.v_ref = 0.2
 
-            self.v_max_indiv = 0.3
-            self.v_min_indiv = -0.3
-            self.v_max_total = 0.3
-            self.v_min_total = -0.3
+            self.v_max_indiv = 0.8
+            self.v_min_indiv = -0.5
+            self.v_max_total = 0.8
+            self.v_min_total = -0.5
 
     def setup(self, rate):
         self.h = 1 / rate
@@ -140,7 +140,7 @@ class NMPC:
             self.X[0 :: self.n][1:]
             - self.X[0 :: self.n][:-1]
             - 0.5
-            * self.h
+            * self.X[7 :: self.n][:-1]
             * (
                 ((self.X[3 :: self.n][1:] + self.X[4 :: self.n][1:]) / 2)
                 * np.cos(self.X[2 :: self.n][1:])
@@ -152,7 +152,7 @@ class NMPC:
             self.X[1 :: self.n][1:]
             - self.X[1 :: self.n][:-1]
             - 0.5
-            * self.h
+            * self.X[7 :: self.n][:-1]
             * (
                 ((self.X[3 :: self.n][1:] + self.X[4 :: self.n][1:]) / 2)
                 * np.sin(self.X[2 :: self.n][1:])
@@ -164,7 +164,7 @@ class NMPC:
             self.X[2 :: self.n][1:]
             - self.X[2 :: self.n][:-1]
             - 0.5
-            * self.h
+            * self.X[7 :: self.n][:-1]
             * (
                 ((self.X[3 :: self.n][1:] - self.X[4 :: self.n][1:]) / self.L)
                 + ((self.X[3 :: self.n][:-1] - self.X[4 :: self.n][:-1]) / self.L)
