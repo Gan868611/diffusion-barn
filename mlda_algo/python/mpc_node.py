@@ -114,18 +114,36 @@ class ROSNode:
                     pose.pose.position.y for pose in self.global_plan.poses[::2]
                 ]
             self.theta_ref = []
+            center_heading = self.X0[2]
             for i in range(len(self.og_x_ref) - 1):
                 theta = math.atan2(
                     (self.og_y_ref[i + 1] - self.og_y_ref[i]),
                     (self.og_x_ref[i + 1] - self.og_x_ref[i]),
                 )
-                self.theta_ref.append(theta)
+                theta_preprocessed = self.heading_preprocess_radian(
+                    center_heading, theta
+                )
+                self.theta_ref.append(theta_preprocessed)
                 if i == 0:
-                    self.theta_ref.append(theta)
-        self.count += 1
+                    self.theta_ref.append(theta_preprocessed)
+                center_heading = theta_preprocessed
 
     def callback_local_plan(self, data):
         self.local_plan = data
+        # print("Local")
+
+    def heading_preprocess_radian(self, center, target):
+        min = center - np.pi
+        max = center + np.pi
+        if target < min:
+            while target < min:
+                # print('Processed')
+                target += 2 * np.pi
+        elif target > max:
+            while target > max:
+                # print('Processed')
+                target -= 2 * np.pi
+        return target
 
     def quaternion_to_yaw(self, orientation):
         # Convert quaternion orientation data to yaw angle of robot

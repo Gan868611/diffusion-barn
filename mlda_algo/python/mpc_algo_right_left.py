@@ -6,8 +6,8 @@ import time
 
 class NMPC:
     def __init__(self, freq=20, N=20):
-        self.COLLISION_DIST = 0.3
-        self.SAFE_DISTANCE = 0.4
+        self.COLLISION_DIST = 0.33
+        self.SAFE_DISTANCE = 0.5
 
         self.f = freq  # Controller frequency [Hz]
         self.h = 1 / self.f
@@ -18,7 +18,7 @@ class NMPC:
         # Using rosparam
         # For each wheels
         self.v_max = 1  # Max velocity [m/s]
-        self.v_min = -0.5  # Min velocity [m/s]
+        self.v_min = -1  # Min velocity [m/s]
         self.v_ref = 0.5  # Reference velocity [m/s]
 
         self.a_max = 1  # Max acceleration [m/s^2]
@@ -49,6 +49,18 @@ class NMPC:
         self.init_guess = 0
 
         if mode == "safe":
+            self.weight_velocity_ref = 0
+            self.weight_max_velocity = 1
+            self.weight_position_error = 1
+            self.weight_acceleration = 0
+            self.weight_cross_track_error = 0
+            self.weight_theta_error = 0
+            self.weight_inital_theta_error = 0
+
+            self.final_value_contraints = 0
+            self.v_ref = 1
+            self.v_max = 1
+        elif mode == "obs":
             self.weight_velocity_ref = 1
             self.weight_max_velocity = 0
             self.weight_position_error = 1
@@ -58,30 +70,18 @@ class NMPC:
             self.weight_inital_theta_error = 0
 
             self.final_value_contraints = 3
-            self.v_ref = 1
-            self.v_max = 1
-        elif mode == "obs":
-            self.weight_velocity_ref = 1
-            self.weight_max_velocity = 0
-            self.weight_position_error = 2
-            self.weight_acceleration = 1
-            self.weight_cross_track_error = 0
-            self.weight_theta_error = 0
-            self.weight_inital_theta_error = 0
-
-            self.final_value_contraints = 6
             self.v_max = 0.8
-            self.v_ref = 0.8
+            self.v_ref = 0.5
         elif mode == "careful":
             self.weight_velocity_ref = 1
             self.weight_max_velocity = 0
-            self.weight_position_error = 2
-            self.weight_acceleration = 1
+            self.weight_position_error = 1
+            self.weight_acceleration = 0
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
 
-            self.final_value_contraints = 6
+            self.final_value_contraints = 3
             self.v_max = 0.5
             self.v_ref = 0.3
 
@@ -89,9 +89,9 @@ class NMPC:
         self.h = 1 / rate
         # --- State and control variables ---
         # Variables
-        # X = [x0, y0, theta0, vr0, vl0, ar0, al0, (...), xN, yN, thetaN, vrN, vlN, arN, alN]
+        # X = [x0, y0, theta0, vr0, vl0, ar0, al0, t0 (...), xN, yN, thetaN, vrN, vlN, arN, alN,tN]
         self.n = (
-            7  # n is "Degree of freedom" in 1 instance. # N is the number of time step
+            8  # n is "Degree of freedom" in 1 instance. # N is the number of time step
         )
         self.X = ca.MX.sym("X", self.N * self.n)
         # Bounds on variables
@@ -99,10 +99,11 @@ class NMPC:
             -np.inf,
             -np.inf,
             -np.inf,
-            -self.v_max,
-            -self.v_max,
+            -(self.v_max - 0.2),
+            -(self.v_max - 0.2),
             -self.a_max,
             -self.a_max,
+            0,
         ] * self.N
         self.lbx = np.array(lbx)
         ubx = [
@@ -113,6 +114,7 @@ class NMPC:
             self.v_max,
             self.a_max,
             self.a_max,
+            1,
         ] * self.N
         self.ubx = np.array(ubx)
 
@@ -157,12 +159,18 @@ class NMPC:
         gv_r = (
             self.X[3 :: self.n][1:]
             - self.X[3 :: self.n][:-1]
-            - 0.5 * self.h * (self.X[5 :: self.n][1:] + self.X[5 :: self.n][:-1])
+            - 0.5
+            * self.X[7 :: self.n][:-1]
+            * (self.X[5 :: self.n][1:] + self.X[5 :: self.n][:-1])
         )
         gv_l = (
             self.X[4 :: self.n][1:]
             - self.X[4 :: self.n][:-1]
-            - 0.5 * self.h * (self.X[6 :: self.n][1:] + self.X[6 :: self.n][:-1])
+            - 0.5
+            * self.X[7 :: self.n][:-1]
+            * (
+                self.X[6 :: self.n][1:] + self.X[6 :: self.n][:-1]
+            )  # Time is an opt variable
         )
         # Positive linear velocity
         gv_min = (self.X[3 :: self.n][1:] + self.X[4 :: self.n][1:]) - self.v_min * 2
@@ -187,8 +195,6 @@ class NMPC:
         start_time = time.time()
 
         # === Set constraints bound
-        self.final_value_contraints = 3
-
         self.lbg = np.zeros(
             (self.N - 1) * self.per_step_constraints
             + self.init_value_constraints
@@ -236,7 +242,7 @@ class NMPC:
         gfx = self.X[0 :: self.n][self.N - 1] - x_ref[idx]
         gfy = self.X[1 :: self.n][self.N - 1] - y_ref[idx]
         gftheta = self.X[2 :: self.n][self.N - 1] - theta_ref[idx]
-        self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
+        # self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
 
         # --- Cost function ---
 
@@ -254,8 +260,8 @@ class NMPC:
             theta_error_cost = (self.X[2 :: self.n][i] - theta_ref[i]) ** 2
 
             # Reference velocity cost
-            reference_velocity_cost = (self.X[3 :: self.n][i] - self.v_ref) ** 2 + (
-                self.X[4 :: self.n][i] - self.v_ref
+            reference_velocity_cost = ((self.X[3 :: self.n][i]) - self.v_ref) ** 2 + (
+                (self.X[4 :: self.n][i]) - self.v_ref
             ) ** 2
             # reference_velocity_cost = 0
 
@@ -289,12 +295,11 @@ class NMPC:
             )
 
         # === Initial guess
-        if self.opt_states == None:
-            init_guess = 0
-        else:
-            # print("Used old values")
-            init_guess = ca.vertcat(self.opt_states[7:], self.opt_states[-7:])
-            # init_guess = 0
+        self.init_guess = ca.GenDM_zeros(self.N * self.n, 1)
+        self.init_guess[:: self.n] = x_ref[: self.N]
+        self.init_guess[1 :: self.n] = y_ref[: self.N]
+        self.init_guess[2 :: self.n] = theta_ref[: self.N]
+        init_guess = self.init_guess
 
         # === Solution
         options = {
@@ -407,21 +412,12 @@ class NMPC:
             self.g = ca.vertcat(self.g, g0)
 
         # Final value constraints expression
-        # gmx = self.X[0::self.n][int((self.N-1)/2)] - x_ref[int((self.N-1)/2)]
-        # gmy = self.X[1::self.n][int((self.N-1)/2)] - y_ref[int((self.N-1)/2)]
-        # gmtheta = self.X[2::self.n][int((self.N-1)/2)] - theta_ref[int((self.N-1)/2)]
 
         offset = self.N - 1
         gfx = self.X[0 :: self.n][offset] - x_ref[offset]
         gfy = self.X[1 :: self.n][offset] - y_ref[offset]
         gftheta = self.X[2 :: self.n][offset] - theta_ref[offset]
-        self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
-
-        offset = self.N - 1
-        gfx = self.X[0 :: self.n][offset] - x_ref[offset]
-        gfy = self.X[1 :: self.n][offset] - y_ref[offset]
-        gftheta = self.X[2 :: self.n][offset] - theta_ref[offset]
-        self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
+        # self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
 
         for i in range(obs_num):
             gobs = (
@@ -448,8 +444,8 @@ class NMPC:
             theta_error_cost = (self.X[2 :: self.n][i] - theta_ref[i]) ** 2
 
             # Reference velocity cost
-            reference_velocity_cost = (self.X[3 :: self.n][i] - self.v_ref) ** 2 + (
-                self.X[4 :: self.n][i] - self.v_ref
+            reference_velocity_cost = ((self.X[3 :: self.n][i]) - self.v_ref) ** 2 + (
+                (self.X[4 :: self.n][i]) - self.v_ref
             ) ** 2
             maximize_velocity = -(
                 self.X[3 :: self.n][i] ** 2 + self.X[4 :: self.n][i] ** 2
@@ -480,12 +476,11 @@ class NMPC:
             )
 
         # === Initial guess
-        if self.opt_states == None:
-            init_guess = 0
-        else:
-            init_guess = ca.vertcat(self.opt_states[7:], self.opt_states[-7:])
-            # init_guess = 0
-
+        self.init_guess = ca.GenDM_zeros(self.N * self.n, 1)
+        self.init_guess[:: self.n] = x_ref[: self.N]
+        self.init_guess[1 :: self.n] = y_ref[: self.N]
+        self.init_guess[2 :: self.n] = theta_ref[: self.N]
+        init_guess = self.init_guess
         # === Solution
         options = {
             "ipopt.print_level": 1,
