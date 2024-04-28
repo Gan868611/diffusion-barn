@@ -6,7 +6,7 @@ import time
 
 class NMPC:
     def __init__(self, freq=20, N=20):
-        self.COLLISION_DIST = 0.33
+        self.COLLISION_DIST = 0.35
         self.SAFE_DISTANCE = 0.5
 
         self.f = freq  # Controller frequency [Hz]
@@ -49,41 +49,41 @@ class NMPC:
         self.init_guess = 0
 
         if mode == "safe":
-            self.weight_velocity_ref = 0
-            self.weight_max_velocity = 1
+            self.weight_velocity_ref = 1
+            self.weight_max_velocity = 0
             self.weight_position_error = 1
             self.weight_acceleration = 0
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
 
-            self.final_value_contraints = 0
+            self.final_value_contraints = 3
             self.v_ref = 1
             self.v_max = 1
         elif mode == "obs":
             self.weight_velocity_ref = 1
             self.weight_max_velocity = 0
-            self.weight_position_error = 1
-            self.weight_acceleration = 0
+            self.weight_position_error = 2
+            self.weight_acceleration = 1
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
 
-            self.final_value_contraints = 3
+            self.final_value_contraints = 0
             self.v_max = 0.8
             self.v_ref = 0.5
         elif mode == "careful":
             self.weight_velocity_ref = 1
             self.weight_max_velocity = 0
-            self.weight_position_error = 1
-            self.weight_acceleration = 0
+            self.weight_position_error = 2
+            self.weight_acceleration = 1
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
 
-            self.final_value_contraints = 3
-            self.v_max = 0.5
-            self.v_ref = 0.3
+            self.final_value_contraints = 0
+            self.v_max = 0.3
+            self.v_ref = 0.2
 
     def setup(self, rate):
         self.h = 1 / rate
@@ -103,7 +103,7 @@ class NMPC:
             -(self.v_max - 0.2),
             -self.a_max,
             -self.a_max,
-            0,
+            0.05,
         ] * self.N
         self.lbx = np.array(lbx)
         ubx = [
@@ -242,7 +242,8 @@ class NMPC:
         gfx = self.X[0 :: self.n][self.N - 1] - x_ref[idx]
         gfy = self.X[1 :: self.n][self.N - 1] - y_ref[idx]
         gftheta = self.X[2 :: self.n][self.N - 1] - theta_ref[idx]
-        # self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
+        if self.final_value_contraints != 0:
+            self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
 
         # --- Cost function ---
 
@@ -417,7 +418,8 @@ class NMPC:
         gfx = self.X[0 :: self.n][offset] - x_ref[offset]
         gfy = self.X[1 :: self.n][offset] - y_ref[offset]
         gftheta = self.X[2 :: self.n][offset] - theta_ref[offset]
-        # self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
+        if self.final_value_contraints != 0:
+            self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
 
         for i in range(obs_num):
             gobs = (

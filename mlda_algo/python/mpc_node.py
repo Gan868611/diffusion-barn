@@ -29,7 +29,7 @@ class ROSNode:
         self.TOPIC_CLOUD = "/front/odom/cloud"
         self.TOPIC_MAP_CLOUD = "/map/cloud"
 
-        self.pub_vel = rospy.Publisher(self.TOPIC_VEL, Twist, queue_size=1, latch=True)
+        self.pub_vel = rospy.Publisher(self.TOPIC_VEL, Twist, queue_size=10, latch=True)
         self.pub_mpc = rospy.Publisher(self.TOPIC_MPC_PLAN, Path, queue_size=1)
 
         self.sub_odometry = rospy.Subscriber(
