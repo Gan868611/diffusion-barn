@@ -9,6 +9,12 @@
   - Might not stop fast enough to avoid collision
 - Theta error
 
+- omega W
+
+  - Make the lidar and the map misalign
+  - But limit the curvature of the turn
+    - It makes the robot act like an ackermann
+
 - Constraining the last horizon step
 
   - Might result in the bending of the mpc plan if it wants to match a certain velocity reference, because going off course will give higher velocity

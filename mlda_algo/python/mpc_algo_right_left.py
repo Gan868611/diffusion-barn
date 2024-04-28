@@ -16,22 +16,19 @@ class NMPC:
         self.L = 0.37558  # Distance between 2 wheels
         # self.L = rospy.get_param("/mlda/L")
         # Using rosparam
+
         # For each wheels
-        self.v_max = 1  # Max velocity [m/s]
-        self.v_min = -1  # Min velocity [m/s]
+        self.v_max_indiv = 1  # Max velocity [m/s]
+        self.v_min_indiv = -1  # Min velocity [m/s]
+        self.v_max_total = 1
+        self.v_min_total = -1
+
         self.v_ref = 0.5  # Reference velocity [m/s]
 
         self.a_max = 1  # Max acceleration [m/s^2]
 
-        self.w_max = 1  # Max angular vel [rad/s]
-        self.w_min = -1  # Max angular vel [rad/s]
-
-        self.weight_velocity_ref = 1
-        self.weight_position_error = 20
-        self.weight_cross_track_error = 0
-        self.weight_theta_error = 0
-        self.weight_acceleration = 0
-        self.weight_inital_theta_error = 0
+        self.w_max = 0.9  # Max angular vel [rad/s]
+        self.w_min = -0.9  # Max angular vel [rad/s]
 
         self.N = N
 
@@ -59,7 +56,10 @@ class NMPC:
 
             self.final_value_contraints = 3
             self.v_ref = 1
-            self.v_max = 1
+            self.v_max_indiv = 1
+            self.v_min_indiv = -1
+            self.v_max_total = 1
+            self.v_min_total = -1
         elif mode == "obs":
             self.weight_velocity_ref = 1
             self.weight_max_velocity = 0
@@ -70,8 +70,12 @@ class NMPC:
             self.weight_inital_theta_error = 0
 
             self.final_value_contraints = 0
-            self.v_max = 0.8
             self.v_ref = 0.5
+
+            self.v_max_indiv = 0.8
+            self.v_min_indiv = -0.8
+            self.v_max_total = 0.8
+            self.v_min_total = -0.8
         elif mode == "careful":
             self.weight_velocity_ref = 1
             self.weight_max_velocity = 0
@@ -82,8 +86,12 @@ class NMPC:
             self.weight_inital_theta_error = 0
 
             self.final_value_contraints = 0
-            self.v_max = 0.3
             self.v_ref = 0.2
+
+            self.v_max_indiv = 0.3
+            self.v_min_indiv = -0.3
+            self.v_max_total = 0.3
+            self.v_min_total = -0.3
 
     def setup(self, rate):
         self.h = 1 / rate
@@ -99,8 +107,8 @@ class NMPC:
             -np.inf,
             -np.inf,
             -np.inf,
-            -(self.v_max - 0.2),
-            -(self.v_max - 0.2),
+            self.v_min_indiv,
+            self.v_min_indiv,
             -self.a_max,
             -self.a_max,
             0.05,
@@ -110,8 +118,8 @@ class NMPC:
             np.inf,
             np.inf,
             np.inf,
-            self.v_max,
-            self.v_max,
+            self.v_max_indiv,
+            self.v_max_indiv,
             self.a_max,
             self.a_max,
             1,
@@ -173,8 +181,12 @@ class NMPC:
             )  # Time is an opt variable
         )
         # Positive linear velocity
-        gv_min = (self.X[3 :: self.n][1:] + self.X[4 :: self.n][1:]) - self.v_min * 2
-        gv_max = self.v_max * 2 - (self.X[3 :: self.n][1:] + self.X[4 :: self.n][1:])
+        gv_min = (
+            self.X[3 :: self.n][1:] + self.X[4 :: self.n][1:]
+        ) - self.v_min_total * 2
+        gv_max = self.v_max_total * 2 - (
+            self.X[3 :: self.n][1:] + self.X[4 :: self.n][1:]
+        )
 
         # Minimum angular velocity
         gw_min = (
@@ -344,7 +356,7 @@ class NMPC:
             round(1 / solve_time, 1),
             "Cost:",
             np.round(np.array(solution["f"]).item(), 1),
-            "=={}=={}==".format(self.v_ref, self.v_max),
+            "=={}=={}==".format(self.v_ref, self.v_max_indiv),
         )
 
         return v_opt, w_opt
@@ -525,7 +537,7 @@ class NMPC:
             round(1 / solve_time, 1),
             "Cost:",
             np.round(np.array(solution["f"]).item(), 1),
-            "=={}=={}==".format(self.v_ref, self.v_max),
+            "=={}=={}==".format(self.v_ref, self.v_max_indiv),
         )
 
         return v_opt, w_opt

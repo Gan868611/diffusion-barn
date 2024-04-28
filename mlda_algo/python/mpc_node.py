@@ -180,26 +180,21 @@ class ROSNode:
             k = 0
             dist = [1] * len(self.og_x_ref)
             min_dist = 1
+            outer_dist = 0.0
             for i in range(len(self.og_x_ref)):
                 dist[i] = math.sqrt(
                     (self.og_x_ref[i] - self.odometry.pose.pose.position.x) ** 2
                     + (self.og_y_ref[i] - self.odometry.pose.pose.position.y) ** 2
                 )
-                if dist[i] <= min_dist:
+                if dist[i] <= min_dist and outer_dist < dist[i]:
                     k = i
                     min_dist = dist[i]
 
-            self.x_ref = self.og_x_ref[k:]
-            self.y_ref = self.og_y_ref[k:]
+            self.x_ref = self.og_x_ref[k + 1 :]
+            self.y_ref = self.og_y_ref[k + 1 :]
 
             all_obs_x = self.obs_x + self.map_x
             all_obs_y = self.obs_y + self.map_y
-            # print(
-            #     "Number of Obstacles: ",
-            #     len(self.obs_x),
-            #     len(self.map_x),
-            #     len(all_obs_x),
-            # )
             if len(self.x_ref) > self.mpc.N:
 
                 # Setup the MPC
@@ -226,7 +221,6 @@ class ROSNode:
                 # Get from the MPC results
                 mpc_x_traj = self.mpc.opt_states[0 :: self.mpc.n]
                 mpc_y_traj = self.mpc.opt_states[1 :: self.mpc.n]
-                # print(type(mpc_x_traj), mpc_x_traj.shape)
                 self.publish_trajectory(mpc_x_traj, mpc_y_traj)
                 print(
                     "V:",
