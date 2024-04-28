@@ -27,8 +27,8 @@ class NMPC:
 
         self.a_max = 1  # Max acceleration [m/s^2]
 
-        self.w_max = 0.9  # Max angular vel [rad/s]
-        self.w_min = -0.9  # Max angular vel [rad/s]
+        self.w_max = 0.8  # Max angular vel [rad/s]
+        self.w_min = -0.8  # Max angular vel [rad/s]
 
         self.N = N
 
@@ -53,6 +53,7 @@ class NMPC:
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
+            self.weight_time_elastic = 0
 
             self.final_value_contraints = 3
             self.v_ref = 1
@@ -63,12 +64,15 @@ class NMPC:
         elif mode == "obs":
             self.weight_velocity_ref = 1
             self.weight_max_velocity = 0
-            self.weight_position_error = 2
+            self.weight_position_error = 10
             self.weight_acceleration = 1
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
+            self.weight_time_elastic = 1
 
+            self.rate = 10
+            self.H = 1 / self.rate
             self.final_value_contraints = 0
             self.v_ref = 0.5
 
@@ -79,12 +83,15 @@ class NMPC:
         elif mode == "careful":
             self.weight_velocity_ref = 1
             self.weight_max_velocity = 0
-            self.weight_position_error = 2
+            self.weight_position_error = 10
             self.weight_acceleration = 1
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
+            self.weight_time_elastic = 1
 
+            self.rate = 10
+            self.H = 1 / self.rate
             self.final_value_contraints = 0
             self.v_ref = 0.2
 
@@ -479,6 +486,7 @@ class NMPC:
                     * (self.X[6 :: self.n][i + 1] - self.X[6 :: self.n][i])
                 )
 
+            time_elastic = (self.X[7 :: self.n][i] - self.H) ** 2
             # Cost function calculation
             J += (
                 self.weight_position_error * position_error_cost
@@ -487,6 +495,7 @@ class NMPC:
                 + self.weight_cross_track_error * cross_track_error_cost
                 + self.weight_acceleration * successive_error
                 + self.weight_max_velocity * maximize_velocity
+                + self.weight_time_elastic * time_elastic
             )
 
         # === Initial guess

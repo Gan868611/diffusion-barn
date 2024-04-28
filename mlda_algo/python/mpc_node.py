@@ -177,21 +177,26 @@ class ROSNode:
         # try:
         # Clear up to the closest point
         try:
-            k = 0
-            dist = [1] * len(self.og_x_ref)
+            min_dist_idx = 0
             min_dist = 1
-            outer_dist = 0.0
+            outer_dist = 0.1
+            outer_dist_idx = 0
+
+            dist = [1] * len(self.og_x_ref)
             for i in range(len(self.og_x_ref)):
                 dist[i] = math.sqrt(
                     (self.og_x_ref[i] - self.odometry.pose.pose.position.x) ** 2
                     + (self.og_y_ref[i] - self.odometry.pose.pose.position.y) ** 2
                 )
                 if dist[i] <= min_dist and outer_dist < dist[i]:
-                    k = i
+                    min_dist_idx = i
                     min_dist = dist[i]
+                if min_dist_idx < i and dist[i] > outer_dist:
+                    outer_dist_idx = i
+                    break
 
-            self.x_ref = self.og_x_ref[k + 1 :]
-            self.y_ref = self.og_y_ref[k + 1 :]
+            self.x_ref = [self.og_x_ref[min_dist_idx]] + self.og_x_ref[outer_dist_idx:]
+            self.y_ref = [self.og_y_ref[min_dist_idx]] + self.og_y_ref[outer_dist_idx:]
 
             all_obs_x = self.obs_x + self.map_x
             all_obs_y = self.obs_y + self.map_y
@@ -240,7 +245,7 @@ if __name__ == "__main__":
     rospy.init_node("nmpc")
     rospy.loginfo("Non-Linear MPC Node running")
     node = ROSNode()
-    pause = rospy.Rate(20)
+    pause = rospy.Rate(10)  # Match the calculation ? Else idle?
     time.sleep(1)
     while not rospy.is_shutdown():
         node.run()

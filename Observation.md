@@ -14,6 +14,11 @@
   - Make the lidar and the map misalign
   - But limit the curvature of the turn
     - It makes the robot act like an ackermann
+    - Trade-off
+
+- It is better to make the global planner slow
+
+- Decrease acceleration is at odd with following the position of the trajectory
 
 - Constraining the last horizon step
 
