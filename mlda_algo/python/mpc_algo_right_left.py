@@ -64,7 +64,7 @@ class NMPC:
         elif mode == "obs":
             self.weight_velocity_ref = 1
             self.weight_max_velocity = 0
-            self.weight_position_error = 10
+            self.weight_position_error = 5
             self.weight_acceleration = 1
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
@@ -83,7 +83,7 @@ class NMPC:
         elif mode == "careful":
             self.weight_velocity_ref = 1
             self.weight_max_velocity = 0
-            self.weight_position_error = 10
+            self.weight_position_error = 5
             self.weight_acceleration = 1
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0

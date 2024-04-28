@@ -179,7 +179,7 @@ class ROSNode:
         try:
             min_dist_idx = 0
             min_dist = 1
-            outer_dist = 0.1
+            outer_dist = 0.05
             outer_dist_idx = 0
 
             dist = [1] * len(self.og_x_ref)
