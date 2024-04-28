@@ -69,7 +69,7 @@ class NMPC:
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
-            self.weight_time_elastic = 1
+            self.weight_time_elastic = 0
 
             self.rate = 10
             self.H = 1 / self.rate
@@ -88,7 +88,7 @@ class NMPC:
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
-            self.weight_time_elastic = 1
+            self.weight_time_elastic = 0
 
             self.rate = 10
             self.H = 1 / self.rate
