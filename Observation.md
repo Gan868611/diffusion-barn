@@ -33,9 +33,14 @@
   - What would it do? Make the give more variance to the velocity?
 
 - Tips:
+
   - Increase inflation to 0.31
   - Increase publish to 10.0
   - Make the map obstacle beyond the blind spot
 
-
 - weight acceleration, make the movement smoother, rejecting quick changes in the planning
+
+- Remove the angle theta for backtracking
+- The more value you initialize, the less N you can reduce
+- For better backtrack, remove the horizon final constraint
+- More N increase checking, but it also smooth out the path

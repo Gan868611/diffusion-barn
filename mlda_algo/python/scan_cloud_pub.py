@@ -12,7 +12,7 @@ import tf
 class LaserScanToPointCloud:
     def __init__(self):
         self.DETECTED = 1.0
-        self.SCAN_SPACING = 20
+        self.SCAN_SPACING = 15
         self.TOPIC_LASER_SCAN = "/front/scan"
         self.TOPIC_POINT_CLOUD_LASER = "/front/laser/cloud"
         self.TOPIC_POINT_CLOUD_ODOM = "/front/odom/cloud"

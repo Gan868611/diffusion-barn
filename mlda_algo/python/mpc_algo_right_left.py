@@ -1,8 +1,8 @@
 from math import sqrt
 import casadi as ca
-import rospy
 import numpy as np
 import time
+import math
 
 
 class NMPC:
@@ -39,6 +39,8 @@ class NMPC:
         self.opt_states = None
         # Obstacle avoidance
         self.mode = "safe"
+        self.display = ""
+        self.reverse = False
         pass
 
     def setup_param(self, mode):
@@ -61,15 +63,12 @@ class NMPC:
 
             self.final_value_contraints = 3
             self.v_ref = 1
-            # self.v_max_indiv = 1
-            # self.v_min_indiv = -1
-            # self.v_max_total = 1
-            # self.v_min_total = -1
+
         elif mode == "obs":
             self.weight_velocity_ref = 0.1
             self.weight_max_velocity = 0
             self.weight_position_error = 10
-            self.weight_acceleration = 0.5
+            self.weight_acceleration = 1
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
@@ -79,17 +78,15 @@ class NMPC:
             self.rate = 10
             self.H = 1 / self.rate
             self.final_value_contraints = 3
-            self.v_ref = 0.8
+            self.v_ref = 0.7
 
-            # self.v_max_indiv = 0.8
-            # self.v_min_indiv = -0.8
-            # self.v_max_total = 0.8
-            # self.v_min_total = -0.8
+            self.v_max_total = 0.8
+            self.v_min_total = -0.8
         elif mode == "careful":
             self.weight_velocity_ref = 0.1
             self.weight_max_velocity = 0
-            self.weight_position_error = 100
-            self.weight_acceleration = 0.5
+            self.weight_position_error = 10
+            self.weight_acceleration = 1
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
@@ -98,13 +95,33 @@ class NMPC:
 
             self.rate = 10
             self.H = 1 / self.rate
-            self.final_value_contraints = 0
+            self.final_value_contraints = 2
             self.v_ref = 0.3
-
             # self.v_max_indiv = 0.5
             # self.v_min_indiv = -0.5
-            # self.v_max_total = 0.5
-            # self.v_min_total = -0.5
+
+            self.v_max_total = 1
+            self.v_min_total = -1
+        self.setup(10)
+
+    def diff_angle(self, a1, a2):
+        diff = max(a1, a2) - min(a1, a2)
+        if diff > np.pi:
+            diff = 2 * np.pi - diff
+        return diff
+
+    def heading_preprocess_radian(self, center, target):
+        min = center - np.pi
+        max = center + np.pi
+        if target < min:
+            while target < min:
+                # print('Processed')
+                target += 2 * np.pi
+        elif target > max:
+            while target > max:
+                # print('Processed')
+                target -= 2 * np.pi
+        return target
 
     def setup(self, rate):
         self.h = 1 / rate
@@ -249,26 +266,22 @@ class NMPC:
             g0 = self.X[i :: self.n][0] - X0[i]
             self.g = ca.vertcat(self.g, g0)
 
-        def diff_angle(a1, a2):
-            diff = max(a1, a2) - min(a1, a2)
-            if diff > np.pi:
-                diff = 2 * np.pi - diff
-            return diff
-
         ref = theta_ref[self.N]
         idx = 0
         for i in range(self.N, min(len(x_ref), len(theta_ref))):
             # print(i, " Diff angle: ", diff_angle(theta_ref[i],ref))
             idx = i
-            if diff_angle(theta_ref[i], ref) > np.pi / 25:
+            if self.diff_angle(theta_ref[i], ref) > np.pi / 25:
                 break
 
         # idx = self.N - 1
         gfx = self.X[0 :: self.n][self.N - 1] - x_ref[idx]
         gfy = self.X[1 :: self.n][self.N - 1] - y_ref[idx]
         gftheta = self.X[2 :: self.n][self.N - 1] - theta_ref[idx]
-        if self.final_value_contraints != 0:
+        if self.final_value_contraints == 3:
             self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
+        elif self.final_value_contraints == 2:
+            self.g = ca.vertcat(self.g, gfx, gfy)
 
         # --- Cost function ---
 
@@ -325,6 +338,14 @@ class NMPC:
         self.init_guess[:: self.n] = x_ref[: self.N]
         self.init_guess[1 :: self.n] = y_ref[: self.N]
         self.init_guess[2 :: self.n] = theta_ref[: self.N]
+
+        if self.diff_angle(X0[2], theta_ref[5]) > np.pi / 2:
+            self.display = "REVERSING"
+            self.reverse = True
+            self.init_guess[2 :: self.n] = -self.init_guess[2 :: self.n]
+        else:
+            self.reverse = False
+            self.display = ""
         init_guess = self.init_guess
 
         # === Solution
@@ -372,7 +393,7 @@ class NMPC:
             "=={}=={}==".format(self.v_ref, self.v_max_indiv),
         )
 
-        return v_opt, w_opt, self.mode, np.array(solution["x"][7 :: self.n][0]).item()
+        return v_opt, w_opt, self.mode, self.display
 
     def solve_obs(self, x_ref, y_ref, theta_ref, obs_x, obs_y, X0):
         start_time = time.time()
@@ -437,15 +458,54 @@ class NMPC:
             g0 = self.X[i :: self.n][0] - X0[i]
             self.g = ca.vertcat(self.g, g0)
 
-        # Final value constraints expression
+        # === Initial guess
+        self.init_guess = ca.GenDM_zeros(self.N * self.n, 1)
+        self.init_guess[:: self.n] = x_ref[: self.N]
+        self.init_guess[1 :: self.n] = y_ref[: self.N]
+        length = self.N
+        count = 0
+        for i in range(1, self.N):
+            if self.diff_angle(X0[2], theta_ref[i]) > np.pi / 2:
+                count += 1
+        if (count / length) > 0.5 and self.mode == "careful":
+            self.display = "REVERSING"
+            self.reverse_theta_ref = []
+            center_heading = X0[2]
+            for i in range(self.N):
+                theta = math.atan2(
+                    (y_ref[i] - y_ref[i + 1]),
+                    (x_ref[i] - x_ref[i + 1]),
+                )
+                theta_preprocessed = self.heading_preprocess_radian(
+                    center_heading, theta
+                )
+                self.reverse_theta_ref.append(theta_preprocessed)
+                if i == self.N - 1:
+                    self.reverse_theta_ref.append(theta_preprocessed)
+                center_heading = theta_preprocessed
 
+            self.init_guess[2 :: self.n] = self.reverse_theta_ref[: self.N]
+            ready_for_print = [str(round(i, 2)) for i in self.reverse_theta_ref]
+            # print("Reversed theta: ", X0[2], " ", ready_for_print)
+        else:
+            self.display = ""
+            self.init_guess[2 :: self.n] = theta_ref[: self.N]
+        init_guess = self.init_guess
+
+        # Final value constraints expression
         offset = self.N - 1
         gfx = self.X[0 :: self.n][offset] - x_ref[offset]
         gfy = self.X[1 :: self.n][offset] - y_ref[offset]
-        gftheta = self.X[2 :: self.n][offset] - theta_ref[offset]
-        if self.final_value_contraints != 0:
+        if self.reverse:
+            gftheta = self.X[2 :: self.n][offset] - self.reverse_theta_ref[-1]
+        else:
+            gftheta = self.X[2 :: self.n][offset] - theta_ref[offset]
+        if self.final_value_contraints == 3:
             self.g = ca.vertcat(self.g, gfx, gfy, gftheta)
+        elif self.final_value_contraints == 2:
+            self.g = ca.vertcat(self.g, gfx, gfy)
 
+        # === Obstacle Constraints
         for i in range(obs_num):
             gobs = (
                 (obs_x[i] - self.X[0 :: self.n][1:]) ** 2
@@ -455,22 +515,7 @@ class NMPC:
             self.g = ca.vertcat(self.g, gobs)
 
         # --- Cost function ---
-
         J = 0
-
-        # initial_theta_error = (self.X[2 :: self.n][1] - theta_ref[1]) ** 2
-        # J += self.weight_inital_theta_error * initial_theta_error
-
-        # for i in range(obs_num):
-
-        #     for j in range(self.N - 1):
-        #         obs_dist = ca.fmax(
-        #             self.COLLISION_DIST**2
-        #             - (obs_x[i] - self.X[0 :: self.n][j]) ** 2
-        #             - (obs_y[i] - self.X[1 :: self.n][j]) ** 2,
-        #             ca.MX(0),
-        #         )
-        #         J += self.weight_obs * obs_dist
 
         for i in range(self.N):
             # Position Error cost
@@ -482,9 +527,9 @@ class NMPC:
             theta_error_cost = (self.X[2 :: self.n][i] - theta_ref[i]) ** 2
 
             # Reference velocity cost
-            reference_velocity_cost = ((self.X[3 :: self.n][i]) - self.v_ref) ** 2 + (
-                (self.X[4 :: self.n][i]) - self.v_ref
-            ) ** 2
+            reference_velocity_cost = (
+                ca.fabs(self.X[3 :: self.n][i]) - self.v_ref
+            ) ** 2 + (ca.fabs(self.X[4 :: self.n][i]) - self.v_ref) ** 2
             maximize_velocity = -(
                 self.X[3 :: self.n][i] ** 2 + self.X[4 :: self.n][i] ** 2
             )
@@ -515,12 +560,6 @@ class NMPC:
                 + self.weight_time_elastic * time_elastic
             )
 
-        # === Initial guess
-        self.init_guess = ca.GenDM_zeros(self.N * self.n, 1)
-        self.init_guess[:: self.n] = x_ref[: self.N]
-        self.init_guess[1 :: self.n] = y_ref[: self.N]
-        self.init_guess[2 :: self.n] = theta_ref[: self.N]
-        init_guess = self.init_guess
         # === Solution
         options = {
             "ipopt.print_level": 1,
@@ -566,4 +605,4 @@ class NMPC:
             "=={}=={}==".format(self.v_ref, self.v_max_indiv),
         )
 
-        return v_opt, w_opt, self.mode, np.array(solution["x"][7 :: self.n][0]).item()
+        return v_opt, w_opt, self.mode, self.display

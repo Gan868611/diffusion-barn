@@ -56,7 +56,7 @@ class ROSNode:
         self.global_plan = Path()
         self.local_plan = Path()
         self.rate = 10
-        self.N = 10
+        self.N = 15
 
         self.mpc = mpc_algo.NMPC(freq=self.rate, N=self.N)
         self.v_opt = 0
@@ -71,7 +71,7 @@ class ROSNode:
         self.theta_ref = []
         self.count = 0
         self.mode = "safe"
-        self.solve_time = 0.1
+        self.display = ""
 
     def callback_cloud(self, data):
         point_generator = pc2.read_points(data)
@@ -125,13 +125,7 @@ class ROSNode:
         # self.pub_marker.publish(marker)
         marker.type = 9
         marker.text = (
-            "V: "
-            + str(round(v, 3))
-            + " W: "
-            + str(round(w, 3))
-            + "\n"
-            + str(round(1 / self.solve_time, 3))
-            + " Hz"
+            "V: " + str(round(v, 3)) + " W: " + str(round(w, 3)) + "\n" + self.display
         )
 
         self.pub_marker.publish(marker)
@@ -251,12 +245,12 @@ class ROSNode:
                 # print("Before solve: ", len(self.x_ref))
                 if len(all_obs_x) == 0:
                     self.mode = "safe"
-                    self.v_opt, self.w_opt, self.mode, self.solve_time = self.mpc.solve(
+                    self.v_opt, self.w_opt, self.mode, self.display = self.mpc.solve(
                         self.x_ref, self.y_ref, self.theta_ref, self.X0
                     )  # Return the optimization variables
                 else:
 
-                    self.v_opt, self.w_opt, self.mode, self.solve_time = (
+                    self.v_opt, self.w_opt, self.mode, self.display = (
                         self.mpc.solve_obs(
                             self.x_ref,
                             self.y_ref,
@@ -292,7 +286,7 @@ if __name__ == "__main__":
     rospy.init_node("nmpc")
     rospy.loginfo("Non-Linear MPC Node running")
     node = ROSNode()
-    pause = rospy.Rate(20)  # Match the calculation ? Else idle?
+    pause = rospy.Rate(10)  # Match the calculation ? Else idle?
     time.sleep(1)
     while not rospy.is_shutdown():
         node.run()
