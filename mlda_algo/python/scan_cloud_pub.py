@@ -11,7 +11,8 @@ import tf
 
 class LaserScanToPointCloud:
     def __init__(self):
-        self.DETECTED = 1.5
+        self.DETECTED = 1.0
+        self.SCAN_SPACING = 20
         self.TOPIC_LASER_SCAN = "/front/scan"
         self.TOPIC_POINT_CLOUD_LASER = "/front/laser/cloud"
         self.TOPIC_POINT_CLOUD_ODOM = "/front/odom/cloud"
@@ -81,7 +82,7 @@ class LaserScanToPointCloud:
 
         count = 0
         for point in point_generator:
-            if count % 15 == 0:
+            if count % self.SCAN_SPACING == 0:
                 p_pc_from_laser = np.array([point[0], point[1], point[2], 1])
                 p_pc_from_odom = np.matmul(final_matrix, p_pc_from_laser)
                 if (p_pc_from_odom[0] - trans[0]) ** 2 + (

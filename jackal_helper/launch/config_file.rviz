@@ -11,6 +11,7 @@ Panels:
         - /Odometry1/Covariance1/Position1
         - /Odometry1/Covariance1/Orientation1
         - /Polygon1
+        - /ObsMap1
         - /Marker1
         - /PointCloud22
       Splitter Ratio: 0.6315789222717285
@@ -381,7 +382,7 @@ Visualization Manager:
       Axis: Z
       Channel Name: intensity
       Class: rviz/PointCloud2
-      Color: 0; 255; 255
+      Color: 0; 85; 0
       Color Transformer: FlatColor
       Decay Time: 0
       Enabled: true
@@ -473,7 +474,7 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 88.26840209960938
+      Scale: 96.03392028808594
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
       X: -1.0819125175476074

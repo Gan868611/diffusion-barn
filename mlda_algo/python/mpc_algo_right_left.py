@@ -7,7 +7,7 @@ import time
 
 class NMPC:
     def __init__(self, freq=20, N=20):
-        self.COLLISION_DIST = 0.35
+        self.COLLISION_DIST = 0.36
         self.SAFE_DISTANCE = 0.5
 
         self.f = freq  # Controller frequency [Hz]
@@ -28,8 +28,11 @@ class NMPC:
 
         self.a_max = 1  # Max acceleration [m/s^2]
 
-        self.w_max = 1  # Max angular vel [rad/s]
-        self.w_min = -1  # Max angular vel [rad/s]
+        self.w_max = 0.8  # Max angular vel [rad/s]
+        self.w_min = -0.8  # Max angular vel [rad/s]
+
+        self.t_min = 0.05  # 20 Hz
+        self.t_max = 1
 
         self.N = N
 
@@ -58,15 +61,15 @@ class NMPC:
 
             self.final_value_contraints = 3
             self.v_ref = 1
-            self.v_max_indiv = 1
-            self.v_min_indiv = -1
-            self.v_max_total = 1
-            self.v_min_total = -1
+            # self.v_max_indiv = 1
+            # self.v_min_indiv = -1
+            # self.v_max_total = 1
+            # self.v_min_total = -1
         elif mode == "obs":
             self.weight_velocity_ref = 0.1
             self.weight_max_velocity = 0
             self.weight_position_error = 10
-            self.weight_acceleration = 1
+            self.weight_acceleration = 0.5
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
@@ -75,18 +78,18 @@ class NMPC:
 
             self.rate = 10
             self.H = 1 / self.rate
-            self.final_value_contraints = 0
+            self.final_value_contraints = 3
             self.v_ref = 0.8
 
-            self.v_max_indiv = 0.8
-            self.v_min_indiv = -0.8
-            self.v_max_total = 0.8
-            self.v_min_total = -0.8
+            # self.v_max_indiv = 0.8
+            # self.v_min_indiv = -0.8
+            # self.v_max_total = 0.8
+            # self.v_min_total = -0.8
         elif mode == "careful":
             self.weight_velocity_ref = 0.1
             self.weight_max_velocity = 0
-            self.weight_position_error = 10
-            self.weight_acceleration = 1
+            self.weight_position_error = 100
+            self.weight_acceleration = 0.5
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
@@ -98,10 +101,10 @@ class NMPC:
             self.final_value_contraints = 0
             self.v_ref = 0.3
 
-            self.v_max_indiv = 0.5
-            self.v_min_indiv = -0.5
-            self.v_max_total = 0.5
-            self.v_min_total = -0.5
+            # self.v_max_indiv = 0.5
+            # self.v_min_indiv = -0.5
+            # self.v_max_total = 0.5
+            # self.v_min_total = -0.5
 
     def setup(self, rate):
         self.h = 1 / rate
@@ -121,7 +124,7 @@ class NMPC:
             self.v_min_indiv,
             -self.a_max,
             -self.a_max,
-            0.05,
+            self.t_min,
         ] * self.N
         self.lbx = np.array(lbx)
         ubx = [
@@ -132,7 +135,7 @@ class NMPC:
             self.v_max_indiv,
             self.a_max,
             self.a_max,
-            1,
+            self.t_max,
         ] * self.N
         self.ubx = np.array(ubx)
 
@@ -369,7 +372,7 @@ class NMPC:
             "=={}=={}==".format(self.v_ref, self.v_max_indiv),
         )
 
-        return v_opt, w_opt, self.mode
+        return v_opt, w_opt, self.mode, np.array(solution["x"][7 :: self.n][0]).item()
 
     def solve_obs(self, x_ref, y_ref, theta_ref, obs_x, obs_y, X0):
         start_time = time.time()
@@ -563,4 +566,4 @@ class NMPC:
             "=={}=={}==".format(self.v_ref, self.v_max_indiv),
         )
 
-        return v_opt, w_opt, self.mode
+        return v_opt, w_opt, self.mode, np.array(solution["x"][7 :: self.n][0]).item()

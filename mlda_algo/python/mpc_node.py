@@ -71,6 +71,7 @@ class ROSNode:
         self.theta_ref = []
         self.count = 0
         self.mode = "safe"
+        self.solve_time = 0.1
 
     def callback_cloud(self, data):
         point_generator = pc2.read_points(data)
@@ -118,12 +119,21 @@ class ROSNode:
         marker.scale.x = 0.2
         marker.scale.y = 0.2
         marker.scale.z = 0.2
-        marker.pose.position.x = x + 0.3
+        marker.pose.position.x = x + 0.5
         marker.pose.position.y = y
         marker.pose.position.z = 0
         # self.pub_marker.publish(marker)
         marker.type = 9
-        marker.text = "V: " + str(round(v, 3)) + " W: " + str(round(w, 3))
+        marker.text = (
+            "V: "
+            + str(round(v, 3))
+            + " W: "
+            + str(round(w, 3))
+            + "\n"
+            + str(round(1 / self.solve_time, 3))
+            + " Hz"
+        )
+
         self.pub_marker.publish(marker)
 
     def callback_global_plan(self, data):
@@ -241,18 +251,20 @@ class ROSNode:
                 # print("Before solve: ", len(self.x_ref))
                 if len(all_obs_x) == 0:
                     self.mode = "safe"
-                    self.v_opt, self.w_opt, self.mode = self.mpc.solve(
+                    self.v_opt, self.w_opt, self.mode, self.solve_time = self.mpc.solve(
                         self.x_ref, self.y_ref, self.theta_ref, self.X0
                     )  # Return the optimization variables
                 else:
 
-                    self.v_opt, self.w_opt, self.mode = self.mpc.solve_obs(
-                        self.x_ref,
-                        self.y_ref,
-                        self.theta_ref,
-                        all_obs_x,
-                        all_obs_y,
-                        self.X0,
+                    self.v_opt, self.w_opt, self.mode, self.solve_time = (
+                        self.mpc.solve_obs(
+                            self.x_ref,
+                            self.y_ref,
+                            self.theta_ref,
+                            all_obs_x,
+                            all_obs_y,
+                            self.X0,
+                        )
                     )  # Return the optimization variables
 
                 # Control and take only the first step

@@ -29,3 +29,13 @@
   - Might result in the bending of the mpc plan if it wants to match a certain velocity reference, because going off course will give higher velocity
 
 - Add time as an optimization variable
+
+  - What would it do? Make the give more variance to the velocity?
+
+- Tips:
+  - Increase inflation to 0.31
+  - Increase publish to 10.0
+  - Make the map obstacle beyond the blind spot
+
+
+- weight acceleration, make the movement smoother, rejecting quick changes in the planning

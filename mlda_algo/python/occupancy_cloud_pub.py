@@ -14,6 +14,7 @@ import tf
 class OccupancyToCloud:
     def __init__(self):
         self.BOX_HALFLENGTH = 1.0
+        self.PORTION_OF_PI = 3.0 / 4.0
         self.TOPIC_LOCAL_MAP = "/move_base/local_costmap/costmap"
         self.TOPIC_MAP_CLOUD = "/map/cloud"
         self.map = OccupancyGrid()
@@ -147,7 +148,7 @@ class OccupancyToCloud:
 
         # points.append([index_bot_right[0]*self.map_res, index_bot_right[1]*self.map_res, 0, 1])
 
-        half_fov = np.pi * 3 / 4
+        half_fov = np.pi * self.PORTION_OF_PI
         L_bound = self.bounded_angle(half_fov + yaw)
         R_bound = self.bounded_angle(-half_fov + yaw)
 
