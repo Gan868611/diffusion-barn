@@ -56,7 +56,7 @@ class ROSNode:
         self.global_plan = Path()
         self.local_plan = Path()
         self.rate = 10
-        self.N = 15
+        self.N = 10
 
         self.mpc = mpc_algo.NMPC(freq=self.rate, N=self.N)
         self.v_opt = 0

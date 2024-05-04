@@ -44,3 +44,10 @@
 - The more value you initialize, the less N you can reduce
 - For better backtrack, remove the horizon final constraint
 - More N increase checking, but it also smooth out the path
+  ========= Good Check point!
+- w = 0.8 seems to be safe? It takes time to reverse but still safe in many situation, prevent excessive rotation
+
+- There are times when it behaves wildly?!
+- Short horizon tell the robot to turn in toward the correct orientation first
+
+- Time elastic stop the robot from vary the velocity given the same position, less change in time leads to less change in velocity

@@ -23,11 +23,7 @@ class NMPC:
         self.v_min_indiv = -1  # Min velocity [m/s]
         self.v_max_total = 1
         self.v_min_total = -1
-
-        self.v_ref = 0.5  # Reference velocity [m/s]
-
         self.a_max = 1  # Max acceleration [m/s^2]
-
         self.w_max = 0.8  # Max angular vel [rad/s]
         self.w_min = -0.8  # Max angular vel [rad/s]
 
@@ -72,7 +68,7 @@ class NMPC:
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
-            self.weight_time_elastic = 1
+            self.weight_time_elastic = 0.1
             self.weight_obs = 0
 
             self.rate = 10
@@ -80,8 +76,6 @@ class NMPC:
             self.final_value_contraints = 3
             self.v_ref = 0.7
 
-            self.v_max_total = 0.8
-            self.v_min_total = -0.8
         elif mode == "careful":
             self.weight_velocity_ref = 0.1
             self.weight_max_velocity = 0
@@ -90,18 +84,14 @@ class NMPC:
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
-            self.weight_time_elastic = 1
+            self.weight_time_elastic = 0.1
             self.weight_obs = 0
 
             self.rate = 10
             self.H = 1 / self.rate
             self.final_value_contraints = 2
             self.v_ref = 0.3
-            # self.v_max_indiv = 0.5
-            # self.v_min_indiv = -0.5
 
-            self.v_max_total = 1
-            self.v_min_total = -1
         self.setup(10)
 
     def diff_angle(self, a1, a2):
@@ -459,15 +449,16 @@ class NMPC:
             self.g = ca.vertcat(self.g, g0)
 
         # === Initial guess
-        self.init_guess = ca.GenDM_zeros(self.N * self.n, 1)
-        self.init_guess[:: self.n] = x_ref[: self.N]
-        self.init_guess[1 :: self.n] = y_ref[: self.N]
+
         length = self.N
         count = 0
         for i in range(1, self.N):
             if self.diff_angle(X0[2], theta_ref[i]) > np.pi / 2:
                 count += 1
         if (count / length) > 0.5 and self.mode == "careful":
+            self.init_guess = ca.GenDM_zeros(self.N * self.n, 1)
+            self.init_guess[0 :: self.n] = x_ref[: self.N]
+            self.init_guess[1 :: self.n] = y_ref[: self.N]
             self.display = "REVERSING"
             self.reverse_theta_ref = []
             center_heading = X0[2]
@@ -489,6 +480,9 @@ class NMPC:
             # print("Reversed theta: ", X0[2], " ", ready_for_print)
         else:
             self.display = ""
+            self.init_guess = ca.GenDM_zeros(self.N * self.n, 1)
+            self.init_guess[0 :: self.n] = x_ref[: self.N]
+            self.init_guess[1 :: self.n] = y_ref[: self.N]
             self.init_guess[2 :: self.n] = theta_ref[: self.N]
         init_guess = self.init_guess
 
