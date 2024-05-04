@@ -1,3 +1,4 @@
+from math import sqrt
 import casadi as ca
 import rospy
 import numpy as np
@@ -27,8 +28,8 @@ class NMPC:
 
         self.a_max = 1  # Max acceleration [m/s^2]
 
-        self.w_max = 0.8  # Max angular vel [rad/s]
-        self.w_min = -0.8  # Max angular vel [rad/s]
+        self.w_max = 1  # Max angular vel [rad/s]
+        self.w_min = -1  # Max angular vel [rad/s]
 
         self.N = N
 
@@ -49,55 +50,57 @@ class NMPC:
             self.weight_velocity_ref = 1
             self.weight_max_velocity = 0
             self.weight_position_error = 1
-            self.weight_acceleration = 0
+            self.weight_acceleration = 1
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
             self.weight_time_elastic = 0
 
             self.final_value_contraints = 3
-            self.v_ref = 0.8
-            self.v_max_indiv = 0.8
-            self.v_min_indiv = -0.5
-            self.v_max_total = 0.8
-            self.v_min_total = -0.5
+            self.v_ref = 1
+            self.v_max_indiv = 1
+            self.v_min_indiv = -1
+            self.v_max_total = 1
+            self.v_min_total = -1
         elif mode == "obs":
-            self.weight_velocity_ref = 1
+            self.weight_velocity_ref = 0.1
             self.weight_max_velocity = 0
-            self.weight_position_error = 5
+            self.weight_position_error = 10
             self.weight_acceleration = 1
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
-            self.weight_time_elastic = 0
+            self.weight_time_elastic = 1
+            self.weight_obs = 0
 
             self.rate = 10
             self.H = 1 / self.rate
             self.final_value_contraints = 0
-            self.v_ref = 0.5
+            self.v_ref = 0.8
 
             self.v_max_indiv = 0.8
-            self.v_min_indiv = -0.5
+            self.v_min_indiv = -0.8
             self.v_max_total = 0.8
-            self.v_min_total = -0.5
+            self.v_min_total = -0.8
         elif mode == "careful":
-            self.weight_velocity_ref = 1
+            self.weight_velocity_ref = 0.1
             self.weight_max_velocity = 0
-            self.weight_position_error = 5
+            self.weight_position_error = 10
             self.weight_acceleration = 1
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
-            self.weight_time_elastic = 0
+            self.weight_time_elastic = 1
+            self.weight_obs = 0
 
             self.rate = 10
             self.H = 1 / self.rate
             self.final_value_contraints = 0
-            self.v_ref = 0.2
+            self.v_ref = 0.3
 
-            self.v_max_indiv = 0.8
+            self.v_max_indiv = 0.5
             self.v_min_indiv = -0.5
-            self.v_max_total = 0.8
+            self.v_max_total = 0.5
             self.v_min_total = -0.5
 
     def setup(self, rate):
@@ -366,7 +369,7 @@ class NMPC:
             "=={}=={}==".format(self.v_ref, self.v_max_indiv),
         )
 
-        return v_opt, w_opt
+        return v_opt, w_opt, self.mode
 
     def solve_obs(self, x_ref, y_ref, theta_ref, obs_x, obs_y, X0):
         start_time = time.time()
@@ -452,8 +455,19 @@ class NMPC:
 
         J = 0
 
-        initial_theta_error = (self.X[2 :: self.n][1] - theta_ref[1]) ** 2
-        J += self.weight_inital_theta_error * initial_theta_error
+        # initial_theta_error = (self.X[2 :: self.n][1] - theta_ref[1]) ** 2
+        # J += self.weight_inital_theta_error * initial_theta_error
+
+        # for i in range(obs_num):
+
+        #     for j in range(self.N - 1):
+        #         obs_dist = ca.fmax(
+        #             self.COLLISION_DIST**2
+        #             - (obs_x[i] - self.X[0 :: self.n][j]) ** 2
+        #             - (obs_y[i] - self.X[1 :: self.n][j]) ** 2,
+        #             ca.MX(0),
+        #         )
+        #         J += self.weight_obs * obs_dist
 
         for i in range(self.N):
             # Position Error cost
@@ -522,8 +536,8 @@ class NMPC:
         )
 
         # === Optimal control
-        vr_opt = solution["x"][3 :: self.n][1]
-        vl_opt = solution["x"][4 :: self.n][1]
+        vr_opt = solution["x"][3 :: self.n][2]
+        vl_opt = solution["x"][4 :: self.n][2]
 
         v_opt = (vr_opt + vl_opt) / 2
         w_opt = (vr_opt - vl_opt) / self.L
@@ -549,4 +563,4 @@ class NMPC:
             "=={}=={}==".format(self.v_ref, self.v_max_indiv),
         )
 
-        return v_opt, w_opt
+        return v_opt, w_opt, self.mode

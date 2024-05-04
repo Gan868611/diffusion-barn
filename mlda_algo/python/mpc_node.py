@@ -28,9 +28,11 @@ class ROSNode:
         self.TOPIC_MPC_PLAN = "/mpc_plan"
         self.TOPIC_CLOUD = "/front/odom/cloud"
         self.TOPIC_MAP_CLOUD = "/map/cloud"
+        self.TOPIC_MARKER = "/mode"
 
         self.pub_vel = rospy.Publisher(self.TOPIC_VEL, Twist, queue_size=10, latch=True)
         self.pub_mpc = rospy.Publisher(self.TOPIC_MPC_PLAN, Path, queue_size=1)
+        self.pub_marker = rospy.Publisher(self.TOPIC_MARKER, Marker, queue_size=1)
 
         self.sub_odometry = rospy.Subscriber(
             self.TOPIC_ODOM, Odometry, self.callback_odom
@@ -54,7 +56,7 @@ class ROSNode:
         self.global_plan = Path()
         self.local_plan = Path()
         self.rate = 10
-        self.N = 20
+        self.N = 10
 
         self.mpc = mpc_algo.NMPC(freq=self.rate, N=self.N)
         self.v_opt = 0
@@ -68,6 +70,7 @@ class ROSNode:
         self.og_y_ref = []
         self.theta_ref = []
         self.count = 0
+        self.mode = "safe"
 
     def callback_cloud(self, data):
         point_generator = pc2.read_points(data)
@@ -95,6 +98,33 @@ class ROSNode:
         vr = v + w * self.mpc.L / 2
         vl = v - w * self.mpc.L / 2
         self.X0 = [x, y, yaw, vr, vl]
+        marker = Marker()
+        marker.type = 2
+        marker.color.a = 1
+        if self.mode == "safe":
+            marker.color.r = 0
+            marker.color.g = 1
+            marker.color.b = 0
+        elif self.mode == "obs":
+            marker.color.r = 1
+            marker.color.g = 1
+            marker.color.b = 0
+        else:
+            marker.color.r = 1
+            marker.color.g = 0
+            marker.color.b = 0
+        marker.header.frame_id = "odom"
+        marker.header.stamp = rospy.Time.now()
+        marker.scale.x = 0.2
+        marker.scale.y = 0.2
+        marker.scale.z = 0.2
+        marker.pose.position.x = x + 0.3
+        marker.pose.position.y = y
+        marker.pose.position.z = 0
+        # self.pub_marker.publish(marker)
+        marker.type = 9
+        marker.text = "V: " + str(round(v, 3)) + " W: " + str(round(w, 3))
+        self.pub_marker.publish(marker)
 
     def callback_global_plan(self, data):
         self.global_plan = data
@@ -210,11 +240,13 @@ class ROSNode:
                 # solve
                 # print("Before solve: ", len(self.x_ref))
                 if len(all_obs_x) == 0:
-                    self.v_opt, self.w_opt = self.mpc.solve(
+                    self.mode = "safe"
+                    self.v_opt, self.w_opt, self.mode = self.mpc.solve(
                         self.x_ref, self.y_ref, self.theta_ref, self.X0
                     )  # Return the optimization variables
                 else:
-                    self.v_opt, self.w_opt = self.mpc.solve_obs(
+
+                    self.v_opt, self.w_opt, self.mode = self.mpc.solve_obs(
                         self.x_ref,
                         self.y_ref,
                         self.theta_ref,
@@ -248,7 +280,7 @@ if __name__ == "__main__":
     rospy.init_node("nmpc")
     rospy.loginfo("Non-Linear MPC Node running")
     node = ROSNode()
-    pause = rospy.Rate(10)  # Match the calculation ? Else idle?
+    pause = rospy.Rate(20)  # Match the calculation ? Else idle?
     time.sleep(1)
     while not rospy.is_shutdown():
         node.run()
