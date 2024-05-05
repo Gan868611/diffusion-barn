@@ -223,7 +223,7 @@ class ROSNode:
                     (self.og_x_ref[i] - self.odometry.pose.pose.position.x) ** 2
                     + (self.og_y_ref[i] - self.odometry.pose.pose.position.y) ** 2
                 )
-                if dist[i] <= min_dist and inner_dist < dist[i]:
+                if dist[i] <= min_dist:
                     min_dist_idx = i
                     min_dist = dist[i]
                 if min_dist_idx < i and dist[i] > outer_dist:

@@ -37,6 +37,7 @@ class NMPC:
         self.mode = "safe"
         self.display = ""
         self.reverse = False
+        self.reverse_theta_ref = []
         pass
 
     def setup_param(self, mode):
@@ -63,12 +64,12 @@ class NMPC:
         elif mode == "obs":
             self.weight_velocity_ref = 0.1
             self.weight_max_velocity = 0
-            self.weight_position_error = 10
+            self.weight_position_error = 5
             self.weight_acceleration = 1
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
-            self.weight_time_elastic = 0.1
+            self.weight_time_elastic = 0.5
             self.weight_obs = 0
 
             self.rate = 10
@@ -79,17 +80,17 @@ class NMPC:
         elif mode == "careful":
             self.weight_velocity_ref = 0.1
             self.weight_max_velocity = 0
-            self.weight_position_error = 10
+            self.weight_position_error = 5
             self.weight_acceleration = 1
             self.weight_cross_track_error = 0
             self.weight_theta_error = 0
             self.weight_inital_theta_error = 0
-            self.weight_time_elastic = 0.1
+            self.weight_time_elastic = 0.5
             self.weight_obs = 0
 
             self.rate = 10
             self.H = 1 / self.rate
-            self.final_value_contraints = 2
+            self.final_value_contraints = 3
             self.v_ref = 0.3
 
         self.setup(10)
@@ -456,10 +457,8 @@ class NMPC:
             if self.diff_angle(X0[2], theta_ref[i]) > np.pi / 2:
                 count += 1
         if (count / length) > 0.5 and self.mode == "careful":
-            self.init_guess = ca.GenDM_zeros(self.N * self.n, 1)
-            self.init_guess[0 :: self.n] = x_ref[: self.N]
-            self.init_guess[1 :: self.n] = y_ref[: self.N]
             self.display = "REVERSING"
+            self.reverse = True
             self.reverse_theta_ref = []
             center_heading = X0[2]
             for i in range(self.N):
@@ -475,15 +474,23 @@ class NMPC:
                     self.reverse_theta_ref.append(theta_preprocessed)
                 center_heading = theta_preprocessed
 
-            self.init_guess[2 :: self.n] = self.reverse_theta_ref[: self.N]
-            ready_for_print = [str(round(i, 2)) for i in self.reverse_theta_ref]
-            # print("Reversed theta: ", X0[2], " ", ready_for_print)
-        else:
-            self.display = ""
             self.init_guess = ca.GenDM_zeros(self.N * self.n, 1)
             self.init_guess[0 :: self.n] = x_ref[: self.N]
             self.init_guess[1 :: self.n] = y_ref[: self.N]
-            self.init_guess[2 :: self.n] = theta_ref[: self.N]
+            self.init_guess[2 :: self.n] = self.reverse_theta_ref[: self.N]
+            # ready_for_print = [str(round(i, 2)) for i in self.reverse_theta_ref]
+            # print("Reversed theta: ", X0[2], " ", ready_for_print)
+        else:
+            self.display = ""
+            self.reverse = False
+            self.init_guess = ca.GenDM_zeros(self.N * self.n, 1)
+            self.init_guess[0 :: self.n] = x_ref[: self.N]
+            self.init_guess[1 :: self.n] = y_ref[: self.N]
+            if self.reverse == False:
+                self.init_guess[2 :: self.n] = theta_ref[: self.N]
+                self.init_guess[3 :: self.n] = self.opt_states[3 :: self.n]
+                self.init_guess[4 :: self.n] = self.opt_states[4 :: self.n]
+
         init_guess = self.init_guess
 
         # Final value constraints expression
