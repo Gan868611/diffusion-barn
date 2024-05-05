@@ -28,7 +28,7 @@ class NMPC:
         self.w_min = -0.8  # Max angular vel [rad/s]
 
         self.t_min = 0.05  # 20 Hz
-        self.t_max = 1
+        self.t_max = 0.5
 
         self.N = N
 
@@ -47,15 +47,14 @@ class NMPC:
         self.init_value_constraints = 5
 
         self.init_guess = 0
-
+        self.weight_inital_theta_error = 0
+        self.weight_theta_error = 0
+        self.weight_max_velocity = 0
+        self.weight_cross_track_error = 0
         if mode == "safe":
             self.weight_velocity_ref = 1
-            self.weight_max_velocity = 0
             self.weight_position_error = 1
-            self.weight_acceleration = 1
-            self.weight_cross_track_error = 0
-            self.weight_theta_error = 0
-            self.weight_inital_theta_error = 0
+            self.weight_acceleration = 5
             self.weight_time_elastic = 0
 
             self.final_value_contraints = 3
@@ -63,13 +62,9 @@ class NMPC:
 
         elif mode == "obs":
             self.weight_velocity_ref = 0.1
-            self.weight_max_velocity = 0
             self.weight_position_error = 5
-            self.weight_acceleration = 1
-            self.weight_cross_track_error = 0
-            self.weight_theta_error = 0
-            self.weight_inital_theta_error = 0
-            self.weight_time_elastic = 0.5
+            self.weight_acceleration = 0.1
+            self.weight_time_elastic = 2
             self.weight_obs = 0
 
             self.rate = 10
@@ -79,19 +74,15 @@ class NMPC:
 
         elif mode == "careful":
             self.weight_velocity_ref = 0.1
-            self.weight_max_velocity = 0
             self.weight_position_error = 5
-            self.weight_acceleration = 1
-            self.weight_cross_track_error = 0
-            self.weight_theta_error = 0
-            self.weight_inital_theta_error = 0
-            self.weight_time_elastic = 0.5
+            self.weight_acceleration = 0.1
+            self.weight_time_elastic = 2
             self.weight_obs = 0
 
-            self.rate = 10
+            self.rate = 5
             self.H = 1 / self.rate
-            self.final_value_contraints = 3
-            self.v_ref = 0.3
+            self.final_value_contraints = 0
+            self.v_ref = 0.4
 
         self.setup(10)
 
