@@ -7,7 +7,7 @@ import math
 
 class NMPC:
     def __init__(self, freq=20, N=20):
-        self.COLLISION_DIST = 0.36
+        self.COLLISION_DIST = 0.37
         self.SAFE_DISTANCE = 0.5
 
         self.f = freq  # Controller frequency [Hz]
@@ -28,11 +28,11 @@ class NMPC:
         self.w_min = -0.8  # Max angular vel [rad/s]
 
         self.t_min = 0.05  # 20 Hz
-        self.t_max = 0.5
+        self.t_max = 0.5  # 2 Hz
 
         self.N = N
 
-        self.opt_states = None
+        self.previous_solution = None
         # Obstacle avoidance
         self.mode = "safe"
         self.display = ""
@@ -59,7 +59,8 @@ class NMPC:
 
             self.final_value_contraints = 3
             self.v_ref = 1
-
+            self.v_max_total = 1
+            self.v_min_total = -1
         elif mode == "obs":
             self.weight_velocity_ref = 0.1
             self.weight_position_error = 5
@@ -71,7 +72,8 @@ class NMPC:
             self.H = 1 / self.rate
             self.final_value_contraints = 3
             self.v_ref = 0.7
-
+            self.v_max_total = 0.7
+            self.v_min_total = -0.7
         elif mode == "careful":
             self.weight_velocity_ref = 0.1
             self.weight_position_error = 5
@@ -83,7 +85,8 @@ class NMPC:
             self.H = 1 / self.rate
             self.final_value_contraints = 0
             self.v_ref = 0.4
-
+            self.v_max_total = 0.4
+            self.v_min_total = -0.4
         self.setup(10)
 
     def diff_angle(self, a1, a2):
@@ -360,7 +363,7 @@ class NMPC:
         w_opt_list = (vr_opt_list - vl_opt_list) / self.L
 
         # Intial guess for next steps
-        self.opt_states = solution["x"]
+        self.previous_solution = solution["x"]
         solve_time = round(time.time() - start_time, 5)
 
         print(
@@ -477,10 +480,9 @@ class NMPC:
             self.init_guess = ca.GenDM_zeros(self.N * self.n, 1)
             self.init_guess[0 :: self.n] = x_ref[: self.N]
             self.init_guess[1 :: self.n] = y_ref[: self.N]
-            if self.reverse == False:
-                self.init_guess[2 :: self.n] = theta_ref[: self.N]
-                self.init_guess[3 :: self.n] = self.opt_states[3 :: self.n]
-                self.init_guess[4 :: self.n] = self.opt_states[4 :: self.n]
+            self.init_guess[2 :: self.n] = theta_ref[: self.N]
+            # self.init_guess[3 :: self.n] = self.previous_solution[3 :: self.n]
+            # self.init_guess[4 :: self.n] = self.previous_solution[4 :: self.n]
 
         init_guess = self.init_guess
 
@@ -582,7 +584,7 @@ class NMPC:
         w_opt_list = (vr_opt_list - vl_opt_list) / self.L
 
         # Intial guess for next steps
-        self.opt_states = solution["x"]
+        self.previous_solution = solution["x"]
         solve_time = round(time.time() - start_time, 5)
 
         print(

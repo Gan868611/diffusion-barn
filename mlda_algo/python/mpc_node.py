@@ -265,8 +265,8 @@ class ROSNode:
                 self.publish_velocity(self.v_opt, self.w_opt)
 
                 # Get from the MPC results
-                mpc_x_traj = self.mpc.opt_states[0 :: self.mpc.n]
-                mpc_y_traj = self.mpc.opt_states[1 :: self.mpc.n]
+                mpc_x_traj = self.mpc.previous_solution[0 :: self.mpc.n]
+                mpc_y_traj = self.mpc.previous_solution[1 :: self.mpc.n]
                 self.publish_trajectory(mpc_x_traj, mpc_y_traj)
                 print(
                     "V:",
