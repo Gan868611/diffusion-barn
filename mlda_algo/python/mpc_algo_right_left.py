@@ -12,11 +12,8 @@ class NMPC:
 
         self.f = freq  # Controller frequency [Hz]
         self.h = 1 / self.f
-        # self.rate = rospy.Rate(self.f)
 
         self.L = 0.37558  # Distance between 2 wheels
-        # self.L = rospy.get_param("/mlda/L")
-        # Using rosparam
 
         # For each wheels
         self.v_max_indiv = 1  # Max velocity [m/s]
@@ -26,9 +23,6 @@ class NMPC:
         self.a_max = 1  # Max acceleration [m/s^2]
         self.w_max = 0.8  # Max angular vel [rad/s]
         self.w_min = -0.8  # Max angular vel [rad/s]
-
-        self.t_min = 0.05  # 20 Hz
-        self.t_max = 0.5  # 2 Hz
 
         self.N = N
 
@@ -46,47 +40,35 @@ class NMPC:
         self.per_step_constraints = 9
         self.init_value_constraints = 5
 
-        self.init_guess = 0
-        self.weight_inital_theta_error = 0
-        self.weight_theta_error = 0
-        self.weight_max_velocity = 0
-        self.weight_cross_track_error = 0
         if mode == "safe":
-            self.weight_velocity_ref = 1
-            self.weight_position_error = 1
-            self.weight_acceleration = 5
-            self.weight_time_elastic = 0
+            self.weight_velocity_ref = 0.1
+            self.weight_position_error = 5
+            self.weight_acceleration = 1
 
             self.final_value_contraints = 3
-            self.v_ref = 1
-            self.v_max_total = 1
-            self.v_min_total = -1
+            self.v_ref = 0.8
+            self.v_max_total = 0.8
+            self.v_min_total = -0.8
+
         elif mode == "obs":
             self.weight_velocity_ref = 0.1
             self.weight_position_error = 5
             self.weight_acceleration = 0.1
-            self.weight_time_elastic = 2
-            self.weight_obs = 0
 
-            self.rate = 10
-            self.H = 1 / self.rate
             self.final_value_contraints = 3
-            self.v_ref = 0.7
+            self.v_ref = 0.5
             self.v_max_total = 0.7
             self.v_min_total = -0.7
         elif mode == "careful":
             self.weight_velocity_ref = 0.1
             self.weight_position_error = 5
             self.weight_acceleration = 0.1
-            self.weight_time_elastic = 2
-            self.weight_obs = 0
 
-            self.rate = 5
-            self.H = 1 / self.rate
             self.final_value_contraints = 0
-            self.v_ref = 0.4
+            self.v_ref = 0.3
             self.v_max_total = 0.4
             self.v_min_total = -0.4
+
         self.setup(10)
 
     def diff_angle(self, a1, a2):
@@ -114,7 +96,7 @@ class NMPC:
         # Variables
         # X = [x0, y0, theta0, vr0, vl0, ar0, al0, t0 (...), xN, yN, thetaN, vrN, vlN, arN, alN,tN]
         self.n = (
-            8  # n is "Degree of freedom" in 1 instance. # N is the number of time step
+            7  # n is "Degree of freedom" in 1 instance. # N is the number of time step
         )
         self.X = ca.MX.sym("X", self.N * self.n)
         # Bounds on variables
@@ -126,7 +108,6 @@ class NMPC:
             self.v_min_indiv,
             -self.a_max,
             -self.a_max,
-            self.t_min,
         ] * self.N
         self.lbx = np.array(lbx)
         ubx = [
@@ -137,7 +118,6 @@ class NMPC:
             self.v_max_indiv,
             self.a_max,
             self.a_max,
-            self.t_max,
         ] * self.N
         self.ubx = np.array(ubx)
 
@@ -148,7 +128,7 @@ class NMPC:
             self.X[0 :: self.n][1:]
             - self.X[0 :: self.n][:-1]
             - 0.5
-            * self.X[7 :: self.n][:-1]
+            * self.h
             * (
                 ((self.X[3 :: self.n][1:] + self.X[4 :: self.n][1:]) / 2)
                 * np.cos(self.X[2 :: self.n][1:])
@@ -160,7 +140,7 @@ class NMPC:
             self.X[1 :: self.n][1:]
             - self.X[1 :: self.n][:-1]
             - 0.5
-            * self.X[7 :: self.n][:-1]
+            * self.h
             * (
                 ((self.X[3 :: self.n][1:] + self.X[4 :: self.n][1:]) / 2)
                 * np.sin(self.X[2 :: self.n][1:])
@@ -172,7 +152,7 @@ class NMPC:
             self.X[2 :: self.n][1:]
             - self.X[2 :: self.n][:-1]
             - 0.5
-            * self.X[7 :: self.n][:-1]
+            * self.h
             * (
                 ((self.X[3 :: self.n][1:] - self.X[4 :: self.n][1:]) / self.L)
                 + ((self.X[3 :: self.n][:-1] - self.X[4 :: self.n][:-1]) / self.L)
@@ -182,15 +162,13 @@ class NMPC:
         gv_r = (
             self.X[3 :: self.n][1:]
             - self.X[3 :: self.n][:-1]
-            - 0.5
-            * self.X[7 :: self.n][:-1]
-            * (self.X[5 :: self.n][1:] + self.X[5 :: self.n][:-1])
+            - 0.5 * self.h * (self.X[5 :: self.n][1:] + self.X[5 :: self.n][:-1])
         )
         gv_l = (
             self.X[4 :: self.n][1:]
             - self.X[4 :: self.n][:-1]
             - 0.5
-            * self.X[7 :: self.n][:-1]
+            * self.h
             * (
                 self.X[6 :: self.n][1:] + self.X[6 :: self.n][:-1]
             )  # Time is an opt variable
@@ -271,8 +249,6 @@ class NMPC:
         # --- Cost function ---
 
         J = 0
-        initial_theta_error = (self.X[2 :: self.n][1] - theta_ref[1]) ** 2
-        J += self.weight_inital_theta_error * initial_theta_error
 
         for i in range(self.N):
             # Position Error cost
@@ -280,23 +256,11 @@ class NMPC:
                 self.X[1 :: self.n][i] - y_ref[i]
             ) ** 2
 
-            # Theta Error cost
-            theta_error_cost = (self.X[2 :: self.n][i] - theta_ref[i]) ** 2
-
             # Reference velocity cost
             reference_velocity_cost = ((self.X[3 :: self.n][i]) - self.v_ref) ** 2 + (
                 (self.X[4 :: self.n][i]) - self.v_ref
             ) ** 2
             # reference_velocity_cost = 0
-
-            # Cross-track Error cost
-            cross_track_error_cost = -(x_ref[i] - self.X[0 :: self.n][i]) * (
-                np.sin(theta_ref[i])
-            ) + (y_ref[i] - self.X[1 :: self.n][i]) * (np.cos(theta_ref[i]))
-
-            maximize_velocity = -(
-                self.X[3 :: self.n][i] ** 2 + self.X[4 :: self.n][i] ** 2
-            )
 
             # Successive control cost
             if i != (self.N - 1):
@@ -312,10 +276,7 @@ class NMPC:
             J += (
                 self.weight_position_error * position_error_cost
                 + self.weight_velocity_ref * reference_velocity_cost
-                + self.weight_theta_error * theta_error_cost
-                + self.weight_cross_track_error * cross_track_error_cost
                 + self.weight_acceleration * successive_error
-                + self.weight_max_velocity * maximize_velocity
             )
 
         # === Initial guess
@@ -517,20 +478,10 @@ class NMPC:
                 self.X[1 :: self.n][i] - y_ref[i]
             ) ** 2
 
-            # Theta Error cost
-            theta_error_cost = (self.X[2 :: self.n][i] - theta_ref[i]) ** 2
-
             # Reference velocity cost
             reference_velocity_cost = (
                 ca.fabs(self.X[3 :: self.n][i]) - self.v_ref
             ) ** 2 + (ca.fabs(self.X[4 :: self.n][i]) - self.v_ref) ** 2
-            maximize_velocity = -(
-                self.X[3 :: self.n][i] ** 2 + self.X[4 :: self.n][i] ** 2
-            )
-            # Cross-track Error cost
-            cross_track_error_cost = -(x_ref[i] - self.X[0 :: self.n][i]) * (
-                np.sin(theta_ref[i])
-            ) + (y_ref[i] - self.X[1 :: self.n][i]) * (np.cos(theta_ref[i]))
 
             # Successive control cost
             if i != (self.N - 1):
@@ -542,16 +493,11 @@ class NMPC:
                     * (self.X[6 :: self.n][i + 1] - self.X[6 :: self.n][i])
                 )
 
-            time_elastic = (self.X[7 :: self.n][i] - self.H) ** 2
             # Cost function calculation
             J += (
                 self.weight_position_error * position_error_cost
                 + self.weight_velocity_ref * reference_velocity_cost
-                + self.weight_theta_error * theta_error_cost
-                + self.weight_cross_track_error * cross_track_error_cost
                 + self.weight_acceleration * successive_error
-                + self.weight_max_velocity * maximize_velocity
-                + self.weight_time_elastic * time_elastic
             )
 
         # === Solution
@@ -572,8 +518,8 @@ class NMPC:
         )
 
         # === Optimal control
-        vr_opt = solution["x"][3 :: self.n][2]
-        vl_opt = solution["x"][4 :: self.n][2]
+        vr_opt = solution["x"][3 :: self.n][1]
+        vl_opt = solution["x"][4 :: self.n][1]
 
         v_opt = (vr_opt + vl_opt) / 2
         w_opt = (vr_opt - vl_opt) / self.L

@@ -1,11 +1,6 @@
-
 # MLDA_EEE
 
-
-
 https://github.com/MLDA-NTU/mlda-barn-2024/assets/32756835/d21bdda6-0903-49c4-aa32-c9ca440c276b
-
-
 
 This is the repository for the proposed solution of Team MLDA_EEE (Machine Learning & Data Analytics) from Nanyang Technological University, Singapore
 
@@ -16,7 +11,8 @@ The original readme file is in [README_BARN.md](./README_BARN.md)
 Launch file at `./jackal_helper/launch/move_base_mlda.launch`
 Source files at `./mlda_algo`
 
-We also create a `run_rviz.py` to launch `move_base_mlda_rviz.launch` to visualize and troubleshoot
+- `run_rviz_auto_start.py`: run the `mpc_node.py` and the nav stack with rviz
+- `run_rviz_no_collision_nor_time.py`: run the environment only, use the 2D pose in rviz to set arbitrary goal to test the nav stack
 
 # Container Environment
 
@@ -35,7 +31,8 @@ sudo singularity build --notest nav_competition_image.sif Singularityfile.def
 
 - On Ubuntu 18.04 Machine
 
-We can build and run the Singularity image
+We can build and run the Singularity image.
+Recommended to build this with 18.04 and 20.04 machines
 
 - On Ubuntu 22.04 Machine
 
