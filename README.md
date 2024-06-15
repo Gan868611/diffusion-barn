@@ -19,7 +19,7 @@ Source files at `./mlda_algo`
 ## Singularity Image
 
 We use Go 1.20 and Singularity 4.0.2
-
+[Help with Singularity](./Singularity_Help.md)
 ```shell
 # Build image name 'nav_competition_image.sif'
 sudo singularity build --notest nav_competition_image.sif Singularityfile.def
