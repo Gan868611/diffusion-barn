@@ -4,3 +4,4 @@ out.txt
 *.csv
 *.pth
 .vscode
+/nohup_out/

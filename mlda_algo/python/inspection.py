@@ -33,7 +33,7 @@ class Inspection():
         
         # init CSV File
         print("Write to CSV file")
-        file_path = "/jackal_ws/src/mlda-barn-2024/test_data.csv"
+        file_path = "/jackal_ws/src/mlda-barn-2024/kul_data_50Hz.csv"
         self.metadata_rows = ["success", "actual_time", "optimal_time", "world_idx", "timestep", "goal_x", "goal_y"]
         self.lidar_rows = ["lidar_" + str(i) for i in range(360)]
         self.odometry_rows = ['pos_x', 'pos_y', 'pose_heading', 'twist_linear', 'twist_angular']
@@ -170,7 +170,7 @@ class Inspection():
     
     def callback_cmd_vel(self, data):
         if not self.stop:
-            print("Linear: ", round(data.linear.x,3), "; Angular: ", round(data.angular.z,3))            
+            # print("Linear: ", round(data.linear.x,3), "; Angular: ", round(data.angular.z,3))            
             # update the data_dict
             self.data_dict["cmd_vel_linear"] = data.linear.x
             self.data_dict["cmd_vel_angular"] = data.angular.z

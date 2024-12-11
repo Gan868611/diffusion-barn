@@ -1,28 +1,29 @@
 #!/bin/bash
 
-# Default values
-start=0
-end=299
-epochs=1
+SINGLE_ENV_TRAIN_SIZE=3
 
-# Parse command-line arguments
-while getopts s:t:e: flag
-do
-    case "${flag}" in
-        s) start=${OPTARG};;
-        t) end=${OPTARG};;
-        e) epochs=${OPTARG};;
-    esac
-done
-
-echo "==== Run $epochs times starting from $start to $end ======"
-
-for ((i=0; i<$epochs; i++))
-do
-    for ((j=$start; j<=$end; j++))
-    do
+for j in $(seq 254 299); do
+    for ((i=0; i<SINGLE_ENV_TRAIN_SIZE; i++)); do
         echo "==== Running world $j ===="
-        python run_rviz_kul.py --world_idx $j
-        echo "==== Done with world $j ===="
+        success=false
+        while [ "$success" = false ]; do
+            nohup timeout 100s  python run_rviz_kul.py --world_idx $j > ./nohup_out/run_rviz_kul_$j-try_$i.log 2>&1 &
+            wait $!
+            result=$?  # Capture the exit status of the python command
+            if [ $result -eq 200 ]; then
+                echo "==== Success ===="
+                success=true
+                echo "==== Killed gazebo and rviz, Sleeping ===="
+                pkill -f  gzserver
+                pkill -f rviz
+                sleep 5
+            else
+                echo "Fail... retrying"
+                echo "==== Killed gazebo and rviz, Sleeping ===="
+                pkill -f  gzserver
+                pkill -f rviz
+                sleep 5
+            fi
+        done
     done
 done
