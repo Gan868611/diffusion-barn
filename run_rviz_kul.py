@@ -31,6 +31,8 @@ if __name__ == "__main__":
     parser.add_argument('--world_idx', type=int, default=0)
     parser.add_argument('--gui', action="store_true")
     parser.add_argument('--out', type=str, default="out.txt")
+    parser.add_argument('--inspection_data_output_filename', type=str, default="unamed_data_collection.csv")
+
     args = parser.parse_args()
     
     ##########################################################################################
@@ -40,6 +42,7 @@ if __name__ == "__main__":
     os.environ["JACKAL_LASER"] = "1"
     os.environ["JACKAL_LASER_MODEL"] = "ust10"
     os.environ["JACKAL_LASER_OFFSET"] = "-0.065 0 0.01"
+    
     # os.environ["DISPLAY"] = "-"
     # os.environ["DISPLAY"] = ":0"
 
@@ -116,6 +119,9 @@ if __name__ == "__main__":
         'roslaunch',
         launch_file
     ])
+
+    rospy.set_param('/inspection_data_output_filename', args.inspection_data_output_filename )
+    
     
     # Make sure your navigation stack recives the correct goal position defined in GOAL_POSITION
     import actionlib

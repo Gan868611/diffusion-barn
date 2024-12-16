@@ -72,7 +72,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description = 'test BARN navigation challenge')
     parser.add_argument('--world_idx', type=int, default=0)
     parser.add_argument('--gui', action="store_true")
-    parser.add_argument('--out', type=str, default="out.txt")
+    parser.add_argument('--out', type=str, default="imit_out.txt")
     args = parser.parse_args()
     
     ##########################################################################################
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     os.environ["JACKAL_LASER"] = "1"
     os.environ["JACKAL_LASER_MODEL"] = "ust10"
     os.environ["JACKAL_LASER_OFFSET"] = "-0.065 0 0.01"
-    os.environ["DISPLAY"] = "-"
+    # os.environ["DISPLAY"] = "-"
     # os.environ["DISPLAY"] = ":0"
     
     if args.world_idx < 300:  # static environment from 0-299
@@ -203,8 +203,8 @@ if __name__ == "__main__":
         pos = gazebo_sim.get_model_state().pose.position
         curr_coor = (pos.x, pos.y)
         # print("Time: %.2f (s), x: %.2f (m), y: %.2f (m)" %(curr_time - start_time, *curr_coor), end="\r")
-        print("Current position: %.2f, %.2f" %(curr_coor[0], curr_coor[1]))
-        print("Goal position: %.2f, %.2f" %(goal_coor[0], goal_coor[1]))
+        # print("Current position: %.2f, %.2f" %(curr_coor[0], curr_coor[1]))
+        # print("Goal position: %.2f, %.2f" %(goal_coor[0], goal_coor[1]))
         
         if compute_distance(goal_coor, curr_coor) > 15:
             collided = True

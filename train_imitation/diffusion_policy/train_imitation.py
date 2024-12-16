@@ -6,7 +6,7 @@ warnings.filterwarnings('ignore')
 import torch
 from torch.utils.data import Dataset
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
+# from sklearn.preprocessing import MinMaxScaler
 
 import random
 # set random seed
@@ -15,17 +15,17 @@ random.seed(42)
 import os
 import hydra
 import torch
-from omegaconf import OmegaConf
+# from omegaconf import OmegaConf
 import pathlib
 from torch.utils.data import DataLoader
 import copy
 import numpy as np
 import random
-import wandb
+# import wandb
 import tqdm
 import shutil
 from diffusion_policy.policy.diffusion_unet_lowdim_policy import DiffusionUnetLowdimPolicy
-from diffusion_policy.workspace.train_diffusion_unet_lowdim_workspace import TrainDiffusionUnetLowdimWorkspace
+# from diffusion_policy.workspace.train_diffusion_unet_lowdim_workspace import TrainDiffusionUnetLowdimWorkspace
 import os
 
 from diffusion_policy.dataset.base_dataset import BaseLowdimDataset
@@ -34,9 +34,8 @@ import torch
 import numpy as np
 import copy
 from diffusion_policy.common.pytorch_util import dict_apply
-from diffusion_policy.common.replay_buffer import ReplayBuffer
-from diffusion_policy.common.sampler import (
-    SequenceSampler, get_val_mask, downsample_mask)
+# from diffusion_policy.common.replay_buffer import ReplayBuffer
+# from diffusion_policy.common.sampler import (SequenceSampler, get_val_mask, downsample_mask)
 from diffusion_policy.model.common.normalizer import LinearNormalizer
 from diffusion_policy.dataset.base_dataset import BaseLowdimDataset
 
@@ -140,7 +139,8 @@ VAL_RATIO = 0.1
 TEST_RATIO = 0.2
 NFRAMES = 20
 
-df = pd.read_csv('/raid/joshua/codes/mlda-barn-2024/data_10Hz.csv')
+print("Reading dataset........")
+df = pd.read_csv('/jackal_ws/src/mlda-barn-2024/kul_data_50Hz_done.csv')
 print(df.head())
 
 world_ids = [i for i in range(NO_WORLDS)]
@@ -211,7 +211,7 @@ for epoch in range(NUM_EPOCHS):
         count += 1
         if count >= save_loss_every:
             curr_loss = total_loss / save_loss_every
-            print("Loss:", curr_loss)
+            # print("Loss:", curr_loss)
             losses.append(curr_loss)
             total_loss = 0
             count = 0
@@ -226,6 +226,7 @@ for epoch in range(NUM_EPOCHS):
         mse_loss = total_mse_losses / len(val_dataloader)
         mse_losses.append(mse_loss)
         print("Val MSE Loss:", mse_loss)
+    print("Epoch: ", epoch, "/",NUM_EPOCHS)
 
 # save losses
 plt.plot(losses)
@@ -244,7 +245,7 @@ save_path = 'val_mse_losses.png'
 plt.savefig(save_path)
 
 # save the policy
-save_path = 'diffuser_policy.pth'
+save_path = 'diffuser_policy_2.pth'
 torch.save({
     'model': policy.model.state_dict(),
     'normalizer': policy.normalizer.state_dict()

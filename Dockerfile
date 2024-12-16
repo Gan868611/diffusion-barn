@@ -64,11 +64,15 @@ WORKDIR /jackal_ws/src/mlda-barn-2024/free_space_motion_tube/build
 RUN cmake ..
 RUN make -j8 && make install
 
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+RUN bash Miniconda3-latest-Linux-x86_64.sh
+RUN source ~/miniconda3/bin/activate
+
+
 RUN apt-get update && apt-get install -y python3-pip build-essential
 RUN pip3 install --upgrade pip
 RUN pip3 install defusedxml rospkg netifaces numpy jupyter scipy matplotlib casadi scikit-learn pandas easydict scipy
-RUN pip3 install torch==1.10.1+cu111 torchvision==0.11.2+cu111 torchaudio==0.10.1 -f https://download.pytorch.org/whl/cu111/torch_stable.html
-
+RUN pip3 install --trusted-host pypi.org --trusted-host pytorch.org --trusted-host download.pytorch.org --trusted-host files.pypi.org --trusted-host files.pytorch.org torch==1.10.1+cu111 torchvision==0.11.2+cu111 torchaudio==0.10.1 -f https://download.pytorch.org/whl/cu111/torch_stable.html
 # Install ROS components
 RUN apt-get install -y ros-melodic-desktop-full ros-melodic-gmapping \
     ros-melodic-robot-localization ros-melodic-joint-state-publisher-gui ros-melodic-navigation \

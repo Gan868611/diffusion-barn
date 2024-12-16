@@ -29,8 +29,8 @@ import random
 from scipy.signal import savgol_filter
 from scipy.spatial.transform import Rotation as R
 
-model_arch = "transformer" 
-# model_arch = "cnn"
+# model_arch = "transformer" 
+model_arch = "cnn"
 
 class ROSNode:
     def __init__(self):
@@ -131,7 +131,7 @@ class ROSNode:
                 actions, _, _ = self.model(self.tensor_lidar, self.tensor_non_lidar)
             else:
                 actions = self.model(self.tensor_lidar, self.tensor_non_lidar)
-            print("Time taken for inference: {0}".format(time.time() - self.start_time))
+            # print("Time taken for inference: {0}".format(time.time() - self.start_time))
             
             self.v, self.w = actions[0][0].item(), actions[0][1].item()
 
