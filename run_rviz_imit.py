@@ -82,8 +82,11 @@ if __name__ == "__main__":
     os.environ["JACKAL_LASER"] = "1"
     os.environ["JACKAL_LASER_MODEL"] = "ust10"
     os.environ["JACKAL_LASER_OFFSET"] = "-0.065 0 0.01"
+<<<<<<< HEAD
     # os.environ["DISPLAY"] = "-"
     # os.environ["DISPLAY"] = ":0"
+=======
+>>>>>>> 4db56551f03c79b4ac04b23c0dd130867585605b
     
     if args.world_idx < 300:  # static environment from 0-299
         world_name = "BARN/world_%d.world" %(args.world_idx)
@@ -118,7 +121,7 @@ if __name__ == "__main__":
     
     rospy.init_node('gym', anonymous=True) #, log_level=rospy.FATAL
     rospy.set_param('/use_sim_time', True)
-    # set_slow_simulation(0.2)
+    set_slow_simulation(0.25)
 
     # Initialize the node
     pub = rospy.Publisher('/result_data', ResultData, queue_size=10)

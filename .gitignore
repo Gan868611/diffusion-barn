@@ -5,3 +5,6 @@ out.txt
 *.pth
 .vscode
 /nohup_out/
+*.pyc
+.vscode
+out.txt
