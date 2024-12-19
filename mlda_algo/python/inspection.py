@@ -33,7 +33,7 @@ class Inspection():
         
         # init CSV File
         print("Write to CSV file")
-        file_path = "/jackal_ws/src/mlda-barn-2024/" + rospy.get_param('/inspection_data_output_filename')
+        file_path = "/jackal_ws/src/mlda-barn-2024/inspection_data/" + rospy.get_param('/inspection_data_output_filename')
 
         self.metadata_rows = ["success", "actual_time", "optimal_time", "world_idx", "timestep", "goal_x", "goal_y"]
         self.lidar_rows = ["lidar_" + str(i) for i in range(360)]
@@ -51,7 +51,7 @@ class Inspection():
         self.sub_result = rospy.Subscriber(self.RESULT_DATA, ResultData, self.callback_result_data)
         
         file_exist = False
-        file_path = os.path.join("/jackal_ws/src/mlda-barn-2024/inspection_data", file_path)
+        # file_path = os.path.join("/jackal_ws/src/mlda-barn-2024/inspection_data", file_path)
         if os.path.exists(file_path):
             file_exist = True
         

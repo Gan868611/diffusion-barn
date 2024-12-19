@@ -1,0 +1,8 @@
+
+inspection_data : '/jackal_ws/src/mlda-barn-2024/inspection_data/kul_data_50Hz_done.csv'
+dataset_script_src: '/jackal_ws/src/mlda-barn-2024/train_imitation/scripts/KULBarnDataset.py'
+batch_size: 32
+learning_rate: 0.00001
+num_epochs: 50
+patience: 5
+suffix: ''

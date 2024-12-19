@@ -8,3 +8,4 @@ out.txt
 *.pyc
 .vscode
 out.txt
+/outputs/
