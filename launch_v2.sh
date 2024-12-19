@@ -50,4 +50,7 @@ docker exec barn-v2 apt-get update
 # docker exec barn apt-get install -y python-scipy
 docker exec barn-v2 pip3 install diffusers hydra einops zarr
 docker exec barn-v2 source ~/miniconda3/bin/activate
+docker exec barn-v2 echo 'export PYTHONPATH=$PYTHONPATH:/jackal_ws/src/mlda-barn-2024/train_imitation/diffusion_policy' >> ~/.bashrc
+
+
 

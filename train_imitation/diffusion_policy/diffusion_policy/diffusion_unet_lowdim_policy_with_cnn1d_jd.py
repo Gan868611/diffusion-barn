@@ -1,12 +1,13 @@
+# !/root/miniconda3/envs/robodiff/bin/python
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import einops
-import numpy as np
+# import numpy as np
 from typing import Union, Dict
 
 from diffusion_policy.policy.diffusion_unet_lowdim_policy import DiffusionUnetLowdimPolicy
-from diffusion_policy.model.common.dict_of_tensor_mixin import DictOfTensorMixin
+# from diffusion_policy.model.common.dict_of_tensor_mixin import DictOfTensorMixin
 from diffusion_policy.model.common.normalizer import LinearNormalizer
 
 class CNNModel(nn.Module):
@@ -69,6 +70,7 @@ class DiffusionUnetLowdimPolicyWithCNN1D(DiffusionUnetLowdimPolicy):
             'offset': torch.nn.Parameter(torch.tensor([0.0])),
         })
         self.normalizer.params_dict['obs'] = self.obs_normalizer_params
+        # pass
 
     # def predict_action(self, lidar, non_lidar) -> Dict[str, torch.Tensor]:
     #     # lidar = self.normalizer['lidar_data'].normalize(lidar)
@@ -83,7 +85,7 @@ class DiffusionUnetLowdimPolicyWithCNN1D(DiffusionUnetLowdimPolicy):
 
     # ========= training  ============
     def set_normalizer(self, normalizer: LinearNormalizer):
-        print(self.normalizer.params_dict)
+        print("normalizer:",self.normalizer.params_dict)
         self.normalizer.load_state_dict(normalizer.state_dict())
         self.normalizer.params_dict['obs'] = self.obs_normalizer_params
         print(self.normalizer.params_dict)

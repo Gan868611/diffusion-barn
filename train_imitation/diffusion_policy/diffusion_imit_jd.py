@@ -4,30 +4,30 @@ import pandas as pd
 warnings.filterwarnings('ignore')
 
 import torch
-from torch.utils.data import Dataset
+# from torch.utils.data import Dataset
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
+# from sklearn.preprocessing import MinMaxScaler
 from diffusers.optimization import get_cosine_schedule_with_warmup
 
 import random
 # set random seed
 random.seed(42)
 
-import os
-import hydra
+# import os
+# import hydra
 import torch
 from omegaconf import OmegaConf
-import pathlib
+# import pathlib
 from torch.utils.data import DataLoader
-import copy
+# import copy
 import numpy as np
 import random
-import wandb
+# import wandb
 import tqdm
-import shutil
-from diffusion_policy.policy.diffusion_unet_lowdim_policy import DiffusionUnetLowdimPolicy
-from diffusion_policy.workspace.train_diffusion_unet_lowdim_workspace import TrainDiffusionUnetLowdimWorkspace
-import os
+# import shutil
+# from diffusion_policy.policy.diffusion_unet_lowdim_policy import DiffusionUnetLowdimPolicy
+# from diffusion_policy.workspace.train_diffusion_unet_lowdim_workspace import TrainDiffusionUnetLowdimWorkspace
+# import os
 
 
 from diffusion_policy.dataset.base_dataset import BaseLowdimDataset
@@ -35,10 +35,10 @@ from typing import Dict
 import torch
 import numpy as np
 import copy
-from diffusion_policy.common.pytorch_util import dict_apply
-from diffusion_policy.common.replay_buffer import ReplayBuffer
-from diffusion_policy.common.sampler import (
-    SequenceSampler, get_val_mask, downsample_mask)
+# from diffusion_policy.common.pytorch_util import dict_apply
+# from diffusion_policy.common.replay_buffer import ReplayBuffer
+# from diffusion_policy.common.sampler import (
+    # SequenceSampler, get_val_mask, downsample_mask)
 from diffusion_policy.model.common.normalizer import LinearNormalizer
 from diffusion_policy.dataset.base_dataset import BaseLowdimDataset
 
@@ -127,7 +127,7 @@ VAL_RATIO = 0.1
 TEST_RATIO = 0.2
 NFRAMES = 4
 
-df = pd.read_csv('/raid/joshua/codes/mlda-barn-2024/data_10Hz.csv')
+df = pd.read_csv('/jackal_ws/src/mlda-barn-2024/kul_data_10Hz_done.csv')
 print(df.head())
 
 world_ids = [i for i in range(NO_WORLDS)]
@@ -172,7 +172,7 @@ obs_dim = cnn_model.output_dim
 action_dim = batch['action'].shape[-1]
 input_dim = obs_dim + action_dim
 model = ConditionalUnet1D(input_dim=action_dim, global_cond_dim=obs_dim)
-noise_scheduler = DDPMScheduler(num_train_timesteps=1000, beta_schedule='linear')
+noise_scheduler = DDPMScheduler(num_train_timesteps=20, beta_schedule='linear')
 policy = DiffusionUnetLowdimPolicyWithCNN1D(
     cnn_model=cnn_model,
     model=model, 
@@ -237,15 +237,18 @@ for epoch in range(NUM_EPOCHS):
         mse_loss = total_mse_losses / len(val_dataloader)
         mse_losses.append(mse_loss)
         print("Val MSE Loss:", mse_loss)
+    print("Epoch: ", epoch, "/",NUM_EPOCHS)
 
 # save losses
 import matplotlib.pyplot as plt
 
+suffix = "diffuser_policy_10Hz_backbone_diffusion_steps_20"
+# save losses
 plt.plot(losses)
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.title('Training Loss')
-save_path = 'diffuser_losses_jd_2.png'
+save_path = f'diffuser_losses_{suffix}.png'
 plt.savefig(save_path)
 plt.clf()  # Clear the current figure
 
@@ -253,11 +256,11 @@ plt.plot(mse_losses)
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.title('Val MSE Loss')
-save_path = 'val_mse_losses_jd_2.png'
+save_path = f'val_mse_losses_{suffix}.png'
 plt.savefig(save_path)
 
 # save the policy
-save_path = 'diffusion_policy_cnn_jd_2.pth'
+save_path = f'/jackal_ws/src/mlda-barn-2024/train_imitation/diffusion_policy/{suffix}.pth'
 torch.save({
     'cnn_model': policy.cnn_model.state_dict(),
     'model': policy.model.state_dict(),

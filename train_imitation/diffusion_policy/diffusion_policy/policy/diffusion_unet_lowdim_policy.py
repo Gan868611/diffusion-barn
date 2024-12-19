@@ -75,6 +75,8 @@ class DiffusionUnetLowdimPolicy(BaseLowdimPolicy):
         # set step values
         scheduler.set_timesteps(self.num_inference_steps)
 
+        # print("Generating trajectory prediction.........")
+
         for t in scheduler.timesteps:
             # 1. apply conditioning
             trajectory[condition_mask] = condition_data[condition_mask]
@@ -89,6 +91,8 @@ class DiffusionUnetLowdimPolicy(BaseLowdimPolicy):
                 generator=generator,
                 **kwargs
                 ).prev_sample
+        
+        # print("trajectory generated.........")
         
         # finally make sure conditioning is enforced
         trajectory[condition_mask] = condition_data[condition_mask]        
@@ -236,6 +240,8 @@ class DiffusionUnetLowdimPolicy(BaseLowdimPolicy):
         # Predict the noise residual
         pred = self.model(noisy_trajectory, timesteps, 
             local_cond=local_cond, global_cond=global_cond)
+        
+        # print(pred.shape)
 
         pred_type = self.noise_scheduler.config.prediction_type 
         if pred_type == 'epsilon':

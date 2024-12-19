@@ -137,10 +137,10 @@ NO_WORLDS = 300
 TRAIN_RATIO = 0.7
 VAL_RATIO = 0.1
 TEST_RATIO = 0.2
-NFRAMES = 4
+NFRAMES = 20
 
 print("Reading dataset........")
-df = pd.read_csv('/jackal_ws/src/mlda-barn-2024/kul_data_10Hz_done.csv')
+df = pd.read_csv('/jackal_ws/src/mlda-barn-2024/kul_data_50Hz_done.csv')
 print(df.head())
 
 world_ids = [i for i in range(NO_WORLDS)]
@@ -149,21 +149,19 @@ train_evals = [id for id in world_ids if id not in test_ids]
 train_ids = random.sample(train_evals, int(NO_WORLDS * TRAIN_RATIO))
 val_ids = [id for id in train_evals if id not in train_ids]
 
-train_df = df[df['world_idx'].isin(train_ids)]
-val_df = df[df['world_idx'].isin(val_ids)]
+test_df = df[df['world_idx'].isin(test_ids)]
+
 
 print(len(train_ids))
 print(len(val_ids))
 print(len(test_ids))
 
-train_dataset = KULBarnDiffusionDataset(train_df, NFRAMES)
-val_dataset = KULBarnDiffusionDataset(val_df, NFRAMES)
-train_dataloader = DataLoader(train_dataset, batch_size=1024, shuffle=True)
-val_dataloader = DataLoader(val_dataset, batch_size=1024, shuffle=False)
-normalizer = train_dataset.get_normalizer()
-print(len(train_dataloader))
+test_dataset = KULBarnDiffusionDataset(test_df, NFRAMES)
+test_dataloader = DataLoader(test_dataset, batch_size=1024, shuffle=True)
+normalizer = test_dataset.get_normalizer()
+print(len(test_dataloader))
 
-for batch in train_dataloader:
+for batch in test_dataloader:
     print(batch['obs'].shape)
     print(batch['action'].shape)
     break
@@ -174,7 +172,7 @@ obs_dim = batch['obs'].shape[-1]
 action_dim = batch['action'].shape[-1]
 input_dim = obs_dim + action_dim
 model = ConditionalUnet1D(input_dim=action_dim, global_cond_dim=obs_dim)
-noise_scheduler = DDPMScheduler(num_train_timesteps=20, beta_schedule='linear')
+noise_scheduler = DDPMScheduler(num_train_timesteps=1000, beta_schedule='linear')
 policy = DiffusionUnetLowdimPolicy(
     model=model, 
     noise_scheduler=noise_scheduler, 
@@ -186,6 +184,11 @@ policy = DiffusionUnetLowdimPolicy(
     obs_as_global_cond=True,
 )
 
+filepath = "/jackal_ws/src/mlda-barn-2024/train_imitation/diffusion_policy/diffuser_policy_2.pth"
+checkpoint = torch.load(filepath, map_location=device)
+policy.model.load_state_dict(checkpoint['model'])
+policy.normalizer.load_state_dict(checkpoint['normalizer'])
+
 policy.set_normalizer(normalizer)
 policy.to(device)
 
@@ -196,62 +199,40 @@ save_loss_every = 10
 total_loss = 0
 count = 0
 
-optimizer = optim.Adam(list(policy.model.parameters()), lr=5e-5)
-policy.model.train()
-for epoch in range(NUM_EPOCHS):
-    for batch in tqdm(train_dataloader):
-        batch = {k: v.to(device) for k, v in batch.items()}
-        loss = policy.compute_loss(batch)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+# optimizer = optim.Adam(list(policy.model.parameters()), lr=5e-5)
+policy.model.eval()
+with torch.no_grad():
+    total_mse_losses = 0
+    for batch in tqdm(test_dataloader):
+        obs_dict = {'obs': batch['obs'].to(device)}
+        pred = policy.predict_action(obs_dict)['action_pred']
+        mse_loss = F.mse_loss(pred, batch['action'].to(device))
+        total_mse_losses += mse_loss.item()  
+    mse_loss = total_mse_losses / len(test_dataloader)
+    mse_losses.append(mse_loss)
+    print("Test MSE Loss:", mse_loss)
 
-        total_loss += loss.item()
+# # save losses
+# plt.plot(losses)
+# plt.xlabel('Epoch')
+# plt.ylabel('Loss')
+# plt.title('Testing Loss')
+# save_path = 'diffuser_testing_losses.png'
+# plt.savefig(save_path)
+# plt.clf()  # Clear the current figure
 
-        count += 1
-        if count >= save_loss_every:
-            curr_loss = total_loss / save_loss_every
-            # print("Loss:", curr_loss)
-            losses.append(curr_loss)
-            total_loss = 0
-            count = 0
+# plt.plot(mse_losses)
+# plt.xlabel('Epoch')
+# plt.ylabel('Loss')
+# plt.title('Val MSE Loss')
+# save_path = 'val_mse_losses.png'
+# plt.savefig(save_path)
 
-    with torch.no_grad():
-        total_mse_losses = 0
-        for batch in tqdm(val_dataloader):
-            obs_dict = {'obs': batch['obs'].to(device)}
-            pred = policy.predict_action(obs_dict)['action_pred']
-            mse_loss = F.mse_loss(pred, batch['action'].to(device))
-            total_mse_losses += mse_loss.item()  
-        mse_loss = total_mse_losses / len(val_dataloader)
-        mse_losses.append(mse_loss)
-        print("Val MSE Loss:", mse_loss)
-    print("Epoch: ", epoch, "/",NUM_EPOCHS)
+# # save the policy
+# save_path = 'diffuser_policy_2.pth'
+# torch.save({
+#     'model': policy.model.state_dict(),
+#     'normalizer': policy.normalizer.state_dict()
+# }, save_path)
 
-
-
-suffix = "diffuser_policy_10Hz_diffusion_steps_20"
-# save losses
-plt.plot(losses)
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.title('Training Loss')
-save_path = f'diffuser_losses_{suffix}.png'
-plt.savefig(save_path)
-plt.clf()  # Clear the current figure
-
-plt.plot(mse_losses)
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.title('Val MSE Loss')
-save_path = f'val_mse_losses_{suffix}.png'
-plt.savefig(save_path)
-
-# save the policy
-save_path = f'/jackal_ws/src/mlda-barn-2024/train_imitation/diffusion_policy/{suffix}.pth'
-torch.save({
-    'model': policy.model.state_dict(),
-    'normalizer': policy.normalizer.state_dict()
-}, save_path)
-
-print(f"Policy saved to {save_path}")
+# print(f"Policy saved to {save_path}")

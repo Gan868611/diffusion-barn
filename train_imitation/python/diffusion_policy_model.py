@@ -1,6 +1,11 @@
+#!/root/miniconda3/envs/robodiff/bin/python
 import torch
 import time 
 from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
+import sys
+
+# Add your path
+sys.path.append('/jackal_ws/src/mlda-barn-2024/train_imitation/diffusion_policy')
 from diffusion_policy.diffusion_unet_lowdim_policy_with_cnn1d_jd import DiffusionUnetLowdimPolicyWithCNN1D, CNNModel
 from diffusion_policy.model.diffusion.conditional_unet1d import ConditionalUnet1D
 from diffusion_policy.model.common.normalizer import LinearNormalizer
@@ -16,9 +21,11 @@ action_dim = 2
 input_dim = obs_dim + action_dim
 
 class DiffusionModel():
-    def __init__(self):
+    def __init__(self, filepath, isEval):
+        print("Python version:", sys.version)
+        print("PyTorch version:", torch.__version__)
         model = ConditionalUnet1D(input_dim=action_dim, global_cond_dim=obs_dim)
-        noise_scheduler = DDPMScheduler(num_train_timesteps=1000, beta_schedule='linear')
+        noise_scheduler = DDPMScheduler(num_train_timesteps=20, beta_schedule='linear')
         policy = DiffusionUnetLowdimPolicyWithCNN1D(
             cnn_model=cnn_model,
             model=model, 
@@ -31,15 +38,26 @@ class DiffusionModel():
             obs_as_global_cond=True,
             oa_step_convention=True,
         )
+        
 
         normalizer = LinearNormalizer()
 
         # Load the state dictionaries
-        filepath = '/jackal_ws/src/mlda-barn-2024/train_imitation/diffusion_policy/diffusion_policy_cnn_jd.pth'
-        checkpoint = torch.load(filepath, map_location=device)
+        filepath = filepath
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print("Diffusion model:", self.device)
+        checkpoint = torch.load(filepath, map_location=self.device)
 
         policy.cnn_model.load_state_dict(checkpoint['cnn_model'])
         policy.model.load_state_dict(checkpoint['model'])
+        if isEval:
+            policy.cnn_model.eval()
+            policy.model.eval()
+            for param in policy.model.parameters():
+                param.requires_grad = False
+            for param in policy.cnn_model.parameters():
+                param.requires_grad = False
+
         normalizer.load_state_dict(checkpoint['normalizer'])
 
         # Set the normalizer in the policy
@@ -47,18 +65,18 @@ class DiffusionModel():
 
         # Move the policy to the appropriate device
         
-        policy.to(device)
+        policy.to(self.device)
 
         self.policy = policy
         print("Model and normalizer loaded successfully.")
 
     def __call__(self, lidar, non_lidar):
-        obs_dict = {'lidar_data': lidar.to(device), 'non_lidar_data': non_lidar.to(device)}
+        obs_dict = {'lidar_data': lidar.to(self.device), 'non_lidar_data': non_lidar.to(self.device)}
         return self.policy.predict_action(obs_dict)['action_pred']
 
 if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print("PyTorch version:", torch.__version__)
+    
     print("CUDA available:", torch.cuda.is_available())
     print("CUDA version:", torch.version.cuda)
     print("Device:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "None")

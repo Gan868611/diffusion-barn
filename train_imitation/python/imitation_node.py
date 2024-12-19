@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/root/miniconda3/envs/robodiff/bin/python
 import rospy
 import numpy as np
 import math
@@ -16,24 +16,24 @@ from cnn_model import CNNModel
 from transformer_model import Transformer
 from diffusion_policy_model import DiffusionModel
 
-from sklearn.preprocessing import MinMaxScaler
+# from sklearn.preprocessing import MinMaxScaler
 import torch
-import pickle
-import pandas as pd
-import json
-import threading
+# import pickle
+# import pandas as pd
+# import json
+# import threading
 import time
 from collections import namedtuple
 import easydict
-import random
+# import random
 
 from scipy.signal import savgol_filter
 from scipy.spatial.transform import Rotation as R
 
 # model_arch = "transformer" 
-model_arch = "cnn"
+# model_arch = "cnn"
 
-# model_arch = "diffusion"
+model_arch = "diffusion"
 
 
 class ROSNode:
@@ -56,9 +56,10 @@ class ROSNode:
         self.og_y_ref = []
         self.theta_ref = []
         self.lidar_data = []
-        self.device = torch.device('cpu')
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print("Node at: " , self.device)
         self.look_ahead = 1.0
-        base_path = "/jackal_ws/src/mlda-barn-2024/train_imitation/models"
+        base_path = "/jackal_ws/src/mlda-barn-2024/train_imitation/diffusion_policy"
 
         if model_arch == "transformer":
             config_dict = easydict.EasyDict({
@@ -81,14 +82,16 @@ class ROSNode:
             self.model = CNNModel(360, 4, 2)
             filepath = base_path + "/cnn_model.pth"
         elif model_arch == "diffusion":
-            self.model = DiffusionModel()
-            filepath = base_path + "/diffusion_model.pth"
-
-        self.model.load_state_dict(torch.load(filepath, map_location=torch.device('cpu')))
-        self.model = self.model.to(self.device)
-        self.model.eval()
-        for param in self.model.parameters():
-            param.requires_grad = False
+            filepath = base_path + "/diffuser_policy_10Hz_backbone_diffusion_steps_20.pth"
+            self.model = DiffusionModel(filepath, isEval = True)
+            # self.model = self.model.model
+            
+        if model_arch != "diffusion":
+            self.model.load_state_dict(torch.load(filepath, map_location=self.device))
+            self.model = self.model.to(self.device)
+            self.model.eval()
+            for param in self.model.parameters():
+                param.requires_grad = False
         
         self.pos_x = 0
         self.pos_y = 0
@@ -115,14 +118,14 @@ class ROSNode:
         )   
 
         if model_arch == "transformer":
-            self.tensor_lidar = torch.rand(1, 360, 1)
-            self.tensor_non_lidar = torch.rand(1, 4, 1)
+            self.tensor_lidar = torch.rand(1, 360, 1).to(self.device)   
+            self.tensor_non_lidar = torch.rand(1, 4, 1).to(self.device)   
         elif model_arch == "cnn":
-            self.tensor_lidar = torch.rand(1, 1, 360)
-            self.tensor_non_lidar = torch.rand(1, 1, 4)
+            self.tensor_lidar = torch.rand(1, 1, 360).to(self.device)   
+            self.tensor_non_lidar = torch.rand(1, 1, 4).to(self.device)   
         elif model_arch == "diffusion":
-            self.tensor_lidar = torch.rand(1, 4, 360)
-            self.tensor_non_lidar = torch.rand(1, 4, 4)
+            self.tensor_lidar = torch.rand(1, 4, 360).to(self.device)   
+            self.tensor_non_lidar = torch.rand(1, 4, 4).to(self.device)   
     
     def callback_front_scan(self, data):
         with torch.no_grad():
@@ -139,6 +142,9 @@ class ROSNode:
                 curr_tensor_lidar = torch.tensor(self.lidar_data, dtype=torch.float32).unsqueeze(0).unsqueeze(0).to(self.device)            
                 curr_tensor_non_lidar = torch.tensor(self.non_lidar_data, dtype=torch.float32).unsqueeze(0).unsqueeze(0).to(self.device)
                 # stack the lidar data with the previous lidar data
+                # print("self.tensor_lidar device:", self.tensor_lidar.device)
+                # print("curr_tensor_lidar device:", curr_tensor_lidar.device)
+
                 self.tensor_lidar = torch.cat((self.tensor_lidar, curr_tensor_lidar), dim=1)
                 self.tensor_non_lidar = torch.cat((self.tensor_non_lidar, curr_tensor_non_lidar), dim=1)
                 # keep only the last 4 frames
@@ -152,7 +158,9 @@ class ROSNode:
                 actions = self.model(self.tensor_lidar, self.tensor_non_lidar)
             elif model_arch == "diffusion":
                 actions = self.model(self.tensor_lidar, self.tensor_non_lidar)
-            # print("Time taken for inference: {0}".format(time.time() - self.start_time))
+                actions = actions.squeeze()
+            print("Time taken for inference: {0}".format(time.time() - self.start_time))
+            print(actions.shape)
             
             self.v, self.w = actions[0][0].item(), actions[0][1].item()
 

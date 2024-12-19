@@ -73,6 +73,7 @@ if __name__ == "__main__":
     parser.add_argument('--world_idx', type=int, default=0)
     parser.add_argument('--gui', action="store_true")
     parser.add_argument('--out', type=str, default="imit_out.txt")
+    parser.add_argument('--inspection_data_output_filename', type=str, default="unamed_data_collection.csv")
     args = parser.parse_args()
     
     ##########################################################################################
@@ -82,12 +83,11 @@ if __name__ == "__main__":
     os.environ["JACKAL_LASER"] = "1"
     os.environ["JACKAL_LASER_MODEL"] = "ust10"
     os.environ["JACKAL_LASER_OFFSET"] = "-0.065 0 0.01"
-<<<<<<< HEAD
+
     # os.environ["DISPLAY"] = "-"
     # os.environ["DISPLAY"] = ":0"
-=======
->>>>>>> 4db56551f03c79b4ac04b23c0dd130867585605b
-    
+
+
     if args.world_idx < 300:  # static environment from 0-299
         world_name = "BARN/world_%d.world" %(args.world_idx)
         INIT_POSITION = [-2.25, 3, 1.57]  # in world frame
@@ -121,6 +121,7 @@ if __name__ == "__main__":
     
     rospy.init_node('gym', anonymous=True) #, log_level=rospy.FATAL
     rospy.set_param('/use_sim_time', True)
+    rospy.set_param('/inspection_data_output_filename', args.inspection_data_output_filename )
     set_slow_simulation(0.25)
 
     # Initialize the node
