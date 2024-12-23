@@ -1,13 +1,12 @@
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append('/jackal_ws/src/mlda-barn-2024/train_imitation')
 import warnings
 warnings.filterwarnings('ignore')
-from KULBarnDataset import KULBarnDataset
+from dataset.KULBarnDataset import KULBarnDataset
 import numpy as np
 from torch.utils.data import DataLoader
-from model.cnn_model import CNNModel
+from model.cnn_model_behavior_cloning import CNNModel
 import torch
 import torch.nn as nn
 import torch.optim as optim

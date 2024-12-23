@@ -4,7 +4,7 @@ warnings.filterwarnings('ignore')
 from KULBarnDataset import KULBarnDataset
 import numpy as np
 from torch.utils.data import DataLoader
-from model.cnn_model import CNNModel
+
 
 import torch
 import torch.nn as nn

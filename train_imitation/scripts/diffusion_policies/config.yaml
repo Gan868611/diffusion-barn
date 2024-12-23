@@ -1,11 +1,17 @@
-
+no_worlds: 300
+train_ratio: 0.7
+val_ratio: 0.1
+test_ratio: 0.2
+horizon: 4
 inspection_data : '/jackal_ws/src/mlda-barn-2024/inspection_data/kul_data_50Hz_done.csv'
 dataset_script_src: '/jackal_ws/src/mlda-barn-2024/train_imitation/scripts/KULBarnDataset.py'
 batch_size: 32
-learning_rate: 0.00001
+learning_rate: 0.00005
 num_epochs: 50
+save_loss_every: 300
 patience: 5
-suffix: ''
+diffusion_steps: 20
+suffix: 'diffuser_policy_50Hz_diffusion_steps_20'
 
 #Testing
 model_path : '/jackal_ws/src/mlda-barn-2024/outputs/behavior_cloning_cnn/241219_133715/cnn_model.pth'

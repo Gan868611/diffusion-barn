@@ -12,9 +12,10 @@ from visualization_msgs.msg import Marker
 import sensor_msgs.point_cloud2 as pc2
 import laser_geometry.laser_geometry as lg
 
-from cnn_model import CNNModel
+
+from cnn_model_behavior_cloning import CNNModel
 from transformer_model import Transformer
-from diffusion_policy_model import DiffusionModel
+from diffusion_policy_model_backbone import DiffusionModel
 
 # from sklearn.preprocessing import MinMaxScaler
 import torch
@@ -59,7 +60,8 @@ class ROSNode:
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print("Node at: " , self.device)
         self.look_ahead = 1.0
-        base_path = "/jackal_ws/src/mlda-barn-2024/train_imitation/diffusion_policy"
+        # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/behavior_cloning_cnn/241219_133715/cnn_model.pth"
+        filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/v1/"
 
         if model_arch == "transformer":
             config_dict = easydict.EasyDict({
@@ -77,13 +79,16 @@ class ROSNode:
                 "device": "cpu",
             })
             self.model = Transformer(config_dict)
-            filepath = base_path + "/transformer_model.pth"
+            # filepath = base_path + "/transformer_model.pth"
         elif model_arch == "cnn":
             self.model = CNNModel(360, 4, 2)
-            filepath = base_path + "/cnn_model.pth"
+            # filepath = base_path + "/cnn_model.pth"
         elif model_arch == "diffusion":
-            filepath = base_path + "/diffuser_policy_10Hz_backbone_diffusion_steps_20.pth"
-            self.model = DiffusionModel(filepath, isEval = True)
+            from omegaconf import OmegaConf
+            config = OmegaConf.load(filepath + '/config.yaml')
+            # filepath = base_path + "/diffuser_policy_10Hz_backbone_diffusion_steps_20.pth"
+            model_path = filepath + '/diffusion_policies_model.pth'
+            self.model = DiffusionModel(filepath=model_path, config=config)
             # self.model = self.model.model
             
         if model_arch != "diffusion":

@@ -6,7 +6,7 @@ import sys
 
 # Add your path
 sys.path.append('/jackal_ws/src/mlda-barn-2024/train_imitation/diffusion_policy')
-from diffusion_policy.policy.diffusion_unet_lowdim_policy import DiffusionUnetLowdimPolicy
+from diffusion_policy.diffusion_unet_lowdim_policy_with_cnn1d_jd import DiffusionUnetLowdimPolicyWithCNN1D, CNNModel
 from diffusion_policy.model.diffusion.conditional_unet1d import ConditionalUnet1D
 from diffusion_policy.model.common.normalizer import LinearNormalizer
 
@@ -15,19 +15,19 @@ lidar_dim = 360 # Replace with the actual lidar dimension
 non_lidar_dim = 4  # Replace with the actual non-lidar dimension
 NFRAMES = 4  # Replace with the actual number of frames
 
-
-
-
+cnn_model = CNNModel(num_lidar_features=lidar_dim, num_non_lidar_features=non_lidar_dim, nframes=NFRAMES)
+obs_dim = cnn_model.output_dim
+action_dim = 2
+input_dim = obs_dim + action_dim
 
 class DiffusionModel():
-    def __init__(self, config,obs_dim, filepath=None,):
-        action_dim = 2
-        input_dim = obs_dim + action_dim
+    def __init__(self, config, filepath=None,):
         print("Python version:", sys.version)
         print("PyTorch version:", torch.__version__)
         model = ConditionalUnet1D(input_dim=action_dim, global_cond_dim=obs_dim)
         noise_scheduler = DDPMScheduler(num_train_timesteps=config.diffusion_steps, beta_schedule='linear')
-        policy = DiffusionUnetLowdimPolicy(
+        policy = DiffusionUnetLowdimPolicyWithCNN1D(
+            cnn_model=cnn_model,
             model=model, 
             noise_scheduler=noise_scheduler, 
             horizon=config.horizon, 

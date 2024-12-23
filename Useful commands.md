@@ -59,7 +59,7 @@ rostopic hz /front/scan
 ```
 
 ```shell
-python run_rviz_kul.py --world_idx 0 # To run KUL on single world_idx
+python ./scripts/run_rviz_kul.py --world_idx 0  --inspection_data_output_filename_kul_data_10Hz.csv # To run KUL on single world_idx
 python scripts/get_kul_data.py # To collect data from KUL
 ```
 
@@ -85,7 +85,7 @@ Run the notebook `train_imitation/behavior-cloning.ipynb`
 ## Test on environment
 ```shell
 python run_rviz_kul.py --world_idx 285
-python run_rviz_imit.py --world_idx 285
+python ./scripts/run_rviz_imit.py --world_idx 285
 python scripts/eval_imit.py
 
 python scripts/get_data_score.py # To get the score of the imitation model
