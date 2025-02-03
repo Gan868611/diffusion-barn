@@ -3,12 +3,12 @@
 ATTEMPT=1
 success_count=0
 failure_count=0
-#every 5 env is the test env [0,5,10]
-for j in $(seq 245 5 295); do
+#every 5 env is the test env [0,5,10.....]
+for j in $(seq 0 5 295); do
     for ((i=0; i<ATTEMPT; i++)); do
         echo "==== Running world $j ===="
         success=false
-        nohup timeout 100s  python run_rviz_imit.py --world_idx $j > ./nohup_out/run_rviz_imit$j-try_$i.log 2>&1 &
+        nohup timeout 100s  python ./scripts/run_rviz_imit.py --world_idx $j > ./nohup_out/run_rviz_imit$j-try_$i.log 2>&1 &
         wait $!
         result=$?  # Capture the exit status of the python command
         if [ $result -eq 200 ]; then

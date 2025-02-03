@@ -1,6 +1,7 @@
 
-inspection_data : '/jackal_ws/src/mlda-barn-2024/inspection_data/kul_data_50Hz_done.csv'
-dataset_script_src: '/jackal_ws/src/mlda-barn-2024/train_imitation/scripts/KULBarnDataset.py'
+inspection_data : '/jackal_ws/src/mlda-barn-2024/inspection_data/kul_data_10Hz_done.csv'
+dataset_script_src: '/jackal_ws/src/mlda-barn-2024/train_imitation/dataset/KULBarnDataset.py'
+train_ratio: 0.7 #train ratio = 0.8*x
 batch_size: 32
 learning_rate: 0.00001
 num_epochs: 50

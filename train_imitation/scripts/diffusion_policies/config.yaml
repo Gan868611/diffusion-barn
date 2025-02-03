@@ -1,17 +1,18 @@
 no_worlds: 300
-train_ratio: 0.7
-val_ratio: 0.1
-test_ratio: 0.2
+train_ratio: 0.7 #train ratio = 0.8*x
+test_ratio: 0.2 #fixed
 horizon: 4
-inspection_data : '/jackal_ws/src/mlda-barn-2024/inspection_data/kul_data_50Hz_done.csv'
+inspection_data : '/jackal_ws/src/mlda-barn-2024/inspection_data/kul_data_10Hz_done.csv'
 dataset_script_src: '/jackal_ws/src/mlda-barn-2024/train_imitation/scripts/KULBarnDataset.py'
 batch_size: 32
-learning_rate: 0.00005
+learning_rate: 0.00011
 num_epochs: 50
-save_loss_every: 300
+save_loss_every: 300 #record train loss every x batch
+validate_every: 10 #do val_loss every x epoch
 patience: 5
 diffusion_steps: 20
-suffix: 'diffuser_policy_50Hz_diffusion_steps_20'
+suffix: 'diffuser_policy_10Hz_diffusion_steps_20'
+num_inference_steps: 20      #reduce diffusion steps for inference
 
 #Testing
 model_path : '/jackal_ws/src/mlda-barn-2024/outputs/behavior_cloning_cnn/241219_133715/cnn_model.pth'

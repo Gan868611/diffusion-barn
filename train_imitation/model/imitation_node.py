@@ -60,7 +60,7 @@ class ROSNode:
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print("Node at: " , self.device)
         self.look_ahead = 1.0
-        # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/behavior_cloning_cnn/241219_133715/cnn_model.pth"
+        # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/behavior_cloning_cnn/250103_092743/cnn_model.pth"
         filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/v1/"
 
         if model_arch == "transformer":
@@ -113,7 +113,7 @@ class ROSNode:
         #     self.scaler_params = json.load(f)
 
         self.sub_front_scan = rospy.Subscriber(self.TOPIC_FRONT_SCAN, LaserScan, self.callback_front_scan)
-        self.pub_vel = rospy.Publisher(self.TOPIC_VEL, Twist, queue_size=10, latch=True)
+        self.pub_vel = rospy.Publisher(self.TOPIC_VEL, Twist, queue_size=10, latch=False)
 
         self.sub_odometry = rospy.Subscriber(
             self.TOPIC_ODOM, Odometry, self.callback_odometry
@@ -258,5 +258,6 @@ if __name__ == "__main__":
     rospy.init_node("imit_node")
     rospy.loginfo("Behaviour Cloning Node running")
     node = ROSNode()
-    while not rospy.is_shutdown():
-        node.run()
+    rospy.spin()
+    # while not rospy.is_shutdown():
+    #     node.run()

@@ -122,7 +122,7 @@ if __name__ == "__main__":
     rospy.init_node('gym', anonymous=True) #, log_level=rospy.FATAL
     rospy.set_param('/use_sim_time', True)
     rospy.set_param('/inspection_data_output_filename', args.inspection_data_output_filename )
-    set_slow_simulation(0.25)
+    set_slow_simulation(0.05) # set slower than real time simulation
 
     # Initialize the node
     pub = rospy.Publisher('/result_data', ResultData, queue_size=10)

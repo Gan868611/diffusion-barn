@@ -16,6 +16,17 @@ non_lidar_dim = 4  # Replace with the actual non-lidar dimension
 NFRAMES = 4  # Replace with the actual number of frames
 
 cnn_model = CNNModel(num_lidar_features=lidar_dim, num_non_lidar_features=non_lidar_dim, nframes=NFRAMES)
+def backward_hook(module, grad_input, grad_output):
+    print(f"Backward Hook - {module.__class__.__name__}:")
+    print(f"Grad Input: {grad_input}")
+    print(f"Grad Output: {grad_output}")
+
+# Register the hook on a specific layer (e.g., self.fc1)
+cnn_model.fc1.register_full_backward_hook(backward_hook)
+
+total_param = sum(p.numel() for p in cnn_model.parameters())
+
+
 obs_dim = cnn_model.output_dim
 action_dim = 2
 input_dim = obs_dim + action_dim
@@ -24,7 +35,10 @@ class DiffusionModel():
     def __init__(self, config, filepath=None,):
         print("Python version:", sys.version)
         print("PyTorch version:", torch.__version__)
-        model = ConditionalUnet1D(input_dim=action_dim, global_cond_dim=obs_dim)
+        #TODO
+        model = ConditionalUnet1D(input_dim=action_dim, global_cond_dim=obs_dim, cond_predict_scale=False)
+        total_params = sum(p.numel() for p in model.parameters()) + total_param
+        print(f"Total parameters: {total_params}") # current param : 43,183,458
         noise_scheduler = DDPMScheduler(num_train_timesteps=config.diffusion_steps, beta_schedule='linear')
         policy = DiffusionUnetLowdimPolicyWithCNN1D(
             cnn_model=cnn_model,
@@ -36,7 +50,8 @@ class DiffusionModel():
             n_obs_steps=1,
             n_action_steps=config.horizon,
             obs_as_global_cond=True,
-            oa_step_convention=True,
+            oa_step_convention=False,
+            num_inference_steps=config.num_inference_steps
         )
         
         normalizer = LinearNormalizer()

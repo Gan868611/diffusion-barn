@@ -155,6 +155,7 @@ for epoch in range(NUM_EPOCHS):
         for batch in tqdm(val_dataloader):
             obs_dict = {'lidar_data': batch['lidar_data'].to(device), 'non_lidar_data': batch['non_lidar_data'].to(device)}
             pred = policy.predict_action(obs_dict)['action_pred']
+            print(batch['action'].shape, pred.shape)
             mse_loss = F.mse_loss(pred, batch['action'].to(device))
             total_mse_losses += mse_loss.item()  
         mse_loss = total_mse_losses / len(val_dataloader)

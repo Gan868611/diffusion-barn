@@ -1,5 +1,6 @@
 from typing import Dict
 import torch
+import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange, reduce
@@ -50,10 +51,12 @@ class DiffusionUnetLowdimPolicy(BaseLowdimPolicy):
         self.pred_action_steps_only = pred_action_steps_only
         self.oa_step_convention = oa_step_convention
         self.kwargs = kwargs
+        self.prev_trajectory = None
 
         if num_inference_steps is None:
             num_inference_steps = noise_scheduler.config.num_train_timesteps
         self.num_inference_steps = num_inference_steps
+        print("self.num_inference_steps: ", self.num_inference_steps)
     
     # ========= inference  ============
     def conditional_sample(self, 
@@ -71,9 +74,31 @@ class DiffusionUnetLowdimPolicy(BaseLowdimPolicy):
             dtype=condition_data.dtype,
             device=condition_data.device,
             generator=generator)
-    
+        
+        # print("generated traj shape: ",trajectory.shape, trajectory)
+        
+      
+        
+
+        if self.prev_trajectory != None:
         # set step values
-        scheduler.set_timesteps(self.num_inference_steps)
+            scheduler.set_timesteps(self.num_inference_steps)
+            scheduler.timesteps = torch.from_numpy(np.arange(0, self.num_inference_steps)[::-1].copy())
+            # print("updated timesteps: ",scheduler.timesteps)
+
+
+            # print("traj shape: ",trajectory.shape)
+
+            noise = torch.randn(trajectory.shape, device=trajectory.device)
+            trajectory = self.prev_trajectory.clone()
+            # print("traj shape: ",trajectory.shape)
+            trajectory[:,:-1,:] = self.prev_trajectory[:,1:,:].clone() # [1,2,3,4] -> [2,3,4,4]
+            # print("traj shape: ",trajectory.shape)
+            # print(self.num_inference_steps, torch.IntTensor(self.num_inference_steps).long())
+
+            trajectory = self.noise_scheduler.add_noise(
+                trajectory, noise, torch.tensor(self.num_inference_steps).long())
+            # print("traj shape: ",trajectory.shape)
 
         # print("Generating trajectory prediction.........")
 
@@ -95,7 +120,8 @@ class DiffusionUnetLowdimPolicy(BaseLowdimPolicy):
         # print("trajectory generated.........")
         
         # finally make sure conditioning is enforced
-        trajectory[condition_mask] = condition_data[condition_mask]        
+        trajectory[condition_mask] = condition_data[condition_mask] 
+        # self.prev_trajectory = trajectory.clone()    
 
         return trajectory
 
@@ -162,16 +188,17 @@ class DiffusionUnetLowdimPolicy(BaseLowdimPolicy):
         if self.pred_action_steps_only:
             action = action_pred
         else:
-            start = To
+            start = To #1
             if self.oa_step_convention:
                 start = To - 1
-            end = start + self.n_action_steps
+            end = start + self.n_action_steps #4
             action = action_pred[:,start:end]
         
         result = {
             'action': action,
             'action_pred': action_pred
         }
+        # print(action[0], action_pred[0])
         if not (self.obs_as_local_cond or self.obs_as_global_cond):
             nobs_pred = nsample[...,Da:]
             obs_pred = self.normalizer['obs'].unnormalize(nobs_pred)
@@ -190,6 +217,7 @@ class DiffusionUnetLowdimPolicy(BaseLowdimPolicy):
         nbatch = self.normalizer.normalize(batch)
         obs = nbatch['obs']
         action = nbatch['action']
+        # print("action: ", action.shape)
 
         # handle different ways of passing observation
         local_cond = None
@@ -209,6 +237,7 @@ class DiffusionUnetLowdimPolicy(BaseLowdimPolicy):
                     start = To - 1
                 end = start + self.n_action_steps
                 trajectory = action[:,start:end]
+                print(trajectory[0], action[0])
         else:
             trajectory = torch.cat([action, obs], dim=-1)
 

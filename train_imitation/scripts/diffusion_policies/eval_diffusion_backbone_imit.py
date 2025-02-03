@@ -7,14 +7,12 @@ import pandas as pd
 from tqdm import tqdm
 import torch
 import torch.nn as nn
+import numpy as np
 import torch.optim as optim
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
 warnings.filterwarnings('ignore')
-import random
-# set random seed
-random.seed(42)
 
 from omegaconf import OmegaConf
 from torch.utils.data import DataLoader
@@ -28,15 +26,20 @@ from dataset.KULBarnDiffusionBackboneDataset import KULBarnDiffusionDataset
 from model.diffusion_policy_model_backbone import DiffusionModel
 from diffusers.optimization import get_cosine_schedule_with_warmup
 
+from omegaconf import OmegaConf
+filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/v1/"
+config = OmegaConf.load(filepath + '/config.yaml')
+# filepath = base_path + "/diffuser_policy_10Hz_backbone_diffusion_steps_20.pth"
+model_path = filepath + '/diffusion_policies_model.pth'
+model = DiffusionModel(filepath=model_path, config=config)
+
 # Load hyperparameters from config.yaml
-config_path = os.path.join(os.path.dirname(__file__), 'config.yaml')
-config = OmegaConf.load(config_path)
+
+np.random.seed(3)
 
 
 no_worlds = config.no_worlds
 train_ratio = config.train_ratio
-val_ratio = config.val_ratio
-test_ratio = config.test_ratio
 horizon = config.horizon
 
 print("Reading dataset........")
@@ -45,18 +48,20 @@ print(df.head())
 
 world_ids = [i for i in range(no_worlds)]
 test_ids = [id for id in range(0, no_worlds, 5)]
+non_test_ids = np.setdiff1d(world_ids, test_ids)
 train_evals = [id for id in world_ids if id not in test_ids]
-train_ids = random.sample(train_evals, int(no_worlds * train_ratio))
-val_ids = [id for id in train_evals if id not in train_ids]
+train_ids = np.random.choice(non_test_ids, int(train_ratio * len(non_test_ids)), replace=False)
+val_ids = np.setdiff1d(non_test_ids, train_ids)
 
 train_df = df[df['world_idx'].isin(train_ids)]
 val_df = df[df['world_idx'].isin(val_ids)]
 
+print("val id: ", val_ids)
 print(len(train_ids))
 print(len(val_ids))
 print(len(test_ids))
 
-train_dataset = KULBarnDiffusionDataset(train_df, horizon)
+train_dataset = KULBarnDiffusionDataset(train_df, horizon) #NFRAMES
 val_dataset = KULBarnDiffusionDataset(val_df, horizon)
 train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
 val_dataloader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False)
@@ -83,42 +88,25 @@ num_epochs = config.num_epochs
 losses = []
 mse_losses = []
 save_loss_every = config.save_loss_every
+validate_every = config.validate_every
 total_loss = 0
 count = 0
 
 optimizer = optim.Adam(list(policy.model.parameters()) + list(policy.cnn_model.parameters()), lr=config.learning_rate)
 scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=500, num_training_steps=num_epochs * len(train_dataloader))
 policy.model.train()
-for epoch in range(num_epochs):
-    for batch in tqdm(train_dataloader):
-        batch = {k: v.to(device) for k, v in batch.items()}
-        loss = policy.compute_loss(batch)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        scheduler.step()
 
-        total_loss += loss.item()
-
-        count += 1
-        if count >= save_loss_every:
-            curr_loss = total_loss / save_loss_every
-            # print("Loss:", curr_loss)
-            losses.append(curr_loss)
-            total_loss = 0
-            count = 0
-
-    with torch.no_grad():
-        total_mse_losses = 0
-        for batch in tqdm(val_dataloader):
-            obs_dict = {'lidar_data': batch['lidar_data'].to(device), 'non_lidar_data': batch['non_lidar_data'].to(device)}
-            pred = policy.predict_action(obs_dict)['action_pred']
-            mse_loss = F.mse_loss(pred, batch['action'].to(device))
-            total_mse_losses += mse_loss.item()  
-        mse_loss = total_mse_losses / len(val_dataloader)
-        mse_losses.append(mse_loss)
-        print("Val MSE Loss:", mse_loss)
-    print("Epoch: ", epoch, "/",num_epochs)
+with torch.no_grad():
+    total_mse_losses = 0
+    for batch in tqdm(val_dataloader):
+        obs_dict = {'lidar_data': batch['lidar_data'].to(device), 'non_lidar_data': batch['non_lidar_data'].to(device)}
+        pred = policy.predict_action(obs_dict)['action_pred']  #[batch, horizon, action_dim]
+        # print(pred.shape)
+        mse_loss = F.mse_loss(pred[:,0,:], batch['action'][:,0,:].to(device))
+        total_mse_losses += mse_loss.item()  
+    mse_loss = total_mse_losses / len(val_dataloader)
+    mse_losses.append(mse_loss)
+    print("Val MSE Loss:", mse_loss)
 
 
 

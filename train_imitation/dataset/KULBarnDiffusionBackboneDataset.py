@@ -49,8 +49,9 @@ class KULBarnDiffusionDataset(BaseLowdimDataset):
         self.grouped_data = self.data.groupby(['episode_id'])
         self.horizon = horizon
         self.indices = self.make_indices(horizon)
+        # print("indices: ", self.indices)
 
-    def make_indices(self, horizon):
+    def make_indices(self, horizon): #n_obs
         indices = []
         for name, group in self.grouped_data:
             original_indices = group.index.values
@@ -59,6 +60,7 @@ class KULBarnDiffusionDataset(BaseLowdimDataset):
             for start in range(max_start + 1):  # Include the last possible starting point
                 end = start + horizon
                 indices.append(original_indices[start:end])
+        print("indices",indices[-1])
         return indices
     
     def __len__(self):
