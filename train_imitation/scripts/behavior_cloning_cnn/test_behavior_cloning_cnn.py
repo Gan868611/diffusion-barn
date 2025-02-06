@@ -4,7 +4,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import warnings
 warnings.filterwarnings('ignore')
-from KULBarnDataset import KULBarnDataset
+from  dataset.KULBarnDataset import KULBarnDataset
 import numpy as np
 from torch.utils.data import DataLoader
 from model.cnn_model_behavior_cloning import CNNModel
@@ -46,7 +46,7 @@ print("Test Dataset Length:", len(test_dataset))
 
 # dataloader
 
-test_loader = DataLoader(test_dataset, batch_size=64, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=32, shuffle=True)
 
 
 # Initialize the model
@@ -54,7 +54,8 @@ num_lidar_features = len(test_dataset.lidar_cols)
 num_non_lidar_features = len(test_dataset.non_lidar_cols)
 num_actions = len(test_dataset.actions_cols)
 model = CNNModel(num_lidar_features, num_non_lidar_features, num_actions)
-model.load_state_dict(torch.load(config.model_path, map_location=torch.device('cuda')))
+model_path = '/jackal_ws/src/mlda-barn-2024/outputs/behavior_cloning_cnn/v1/cnn_model.pth'
+model.load_state_dict(torch.load(model_path, map_location=torch.device('cuda')))
 
 # Define the loss function and optimizer
 loss_fn = nn.MSELoss()
@@ -91,18 +92,13 @@ def test_model(model, test_loader, loss_fn):
 
 
 import sys
-NUM_EPOCHS = 50
+
 
 
 sys.stdout.flush()
 
-cnn_test_losses = []
-best_val_loss = float('inf')
-patience = 3
-no_improve_epochs = 0
-
 test_loss = test_model(model, test_loader=test_loader, loss_fn=loss_fn)
-cnn_test_losses.append(test_loss)
+# cnn_test_losses.append(test_loss)
 
 print(f"Test Loss: {test_loss}")
 sys.stdout.flush()

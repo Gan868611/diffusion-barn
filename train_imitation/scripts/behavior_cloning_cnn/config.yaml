@@ -9,4 +9,4 @@ patience: 5
 suffix: ''
 
 #Testing
-model_path : '/jackal_ws/src/mlda-barn-2024/outputs/behavior_cloning_cnn/241219_133715/cnn_model.pth'
+# model_path : '/jackal_ws/src/mlda-barn-2024/outputs/behavior_cloning_cnn/v1/cnn_model.pth'

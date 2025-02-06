@@ -59,7 +59,7 @@ rostopic hz /front/scan
 ```
 
 ```shell
-python ./scripts/run_rviz_kul.py --world_idx 0  --inspection_data_output_filename_kul_data_10Hz.csv # To run KUL on single world_idx
+python ./scripts/run_rviz_kul.py --world_idx 0  --inspection_data_output_filename kul_data_10Hz.csv # To run KUL on single world_idx
 python scripts/get_kul_data.py # To collect data from KUL
 ```
 

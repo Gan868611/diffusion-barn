@@ -60,7 +60,7 @@ class KULBarnDiffusionDataset(BaseLowdimDataset):
             for start in range(max_start + 1):  # Include the last possible starting point
                 end = start + horizon
                 indices.append(original_indices[start:end])
-        print("indices",indices[-1])
+        print("indices",indices[0])
         return indices
     
     def __len__(self):

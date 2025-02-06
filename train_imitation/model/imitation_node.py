@@ -32,7 +32,7 @@ from scipy.signal import savgol_filter
 from scipy.spatial.transform import Rotation as R
 
 # model_arch = "transformer" 
-# model_arch = "cnn"
+# model_arch = "cnn" #behavior cloning
 
 model_arch = "diffusion"
 

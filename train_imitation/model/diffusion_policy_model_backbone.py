@@ -36,7 +36,7 @@ class DiffusionModel():
         print("Python version:", sys.version)
         print("PyTorch version:", torch.__version__)
         #TODO
-        model = ConditionalUnet1D(input_dim=action_dim, global_cond_dim=obs_dim, cond_predict_scale=False)
+        model = ConditionalUnet1D(input_dim=action_dim, global_cond_dim=obs_dim, cond_predict_scale=True)
         total_params = sum(p.numel() for p in model.parameters()) + total_param
         print(f"Total parameters: {total_params}") # current param : 43,183,458
         noise_scheduler = DDPMScheduler(num_train_timesteps=config.diffusion_steps, beta_schedule='linear')

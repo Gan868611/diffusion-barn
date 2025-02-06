@@ -27,11 +27,11 @@ from model.diffusion_policy_model_backbone import DiffusionModel
 from diffusers.optimization import get_cosine_schedule_with_warmup
 
 from omegaconf import OmegaConf
-filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/v1/"
+filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/v2/"
 config = OmegaConf.load(filepath + '/config.yaml')
 # filepath = base_path + "/diffuser_policy_10Hz_backbone_diffusion_steps_20.pth"
 model_path = filepath + '/diffusion_policies_model.pth'
-model = DiffusionModel(filepath=model_path, config=config)
+# model = DiffusionModel(filepath=model_path, config=config)
 
 # Load hyperparameters from config.yaml
 
@@ -55,6 +55,7 @@ val_ids = np.setdiff1d(non_test_ids, train_ids)
 
 train_df = df[df['world_idx'].isin(train_ids)]
 val_df = df[df['world_idx'].isin(val_ids)]
+test_df = df[df['world_idx'].isin(test_ids)]
 
 print("val id: ", val_ids)
 print(len(train_ids))
@@ -63,8 +64,11 @@ print(len(test_ids))
 
 train_dataset = KULBarnDiffusionDataset(train_df, horizon) #NFRAMES
 val_dataset = KULBarnDiffusionDataset(val_df, horizon)
+test_dataset = KULBarnDiffusionDataset(test_df, horizon)
 train_dataloader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
 val_dataloader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False)
+test_dataloader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False)
+
 normalizer = train_dataset.get_normalizer()
 print(len(train_dataloader))
 
@@ -78,10 +82,10 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
 
-model = DiffusionModel(config=config)
+model = DiffusionModel(filepath=model_path, config=config)
 policy = model.policy
 
-policy.set_normalizer(normalizer)
+# policy.set_normalizer(normalizer)
 policy.to(device)
 
 num_epochs = config.num_epochs
@@ -94,11 +98,12 @@ count = 0
 
 optimizer = optim.Adam(list(policy.model.parameters()) + list(policy.cnn_model.parameters()), lr=config.learning_rate)
 scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=500, num_training_steps=num_epochs * len(train_dataloader))
-policy.model.train()
+policy.model.eval()
+policy.cnn_model.eval()
 
 with torch.no_grad():
     total_mse_losses = 0
-    for batch in tqdm(val_dataloader):
+    for batch in tqdm(test_dataloader):
         obs_dict = {'lidar_data': batch['lidar_data'].to(device), 'non_lidar_data': batch['non_lidar_data'].to(device)}
         pred = policy.predict_action(obs_dict)['action_pred']  #[batch, horizon, action_dim]
         # print(pred.shape)
@@ -106,48 +111,5 @@ with torch.no_grad():
         total_mse_losses += mse_loss.item()  
     mse_loss = total_mse_losses / len(val_dataloader)
     mse_losses.append(mse_loss)
-    print("Val MSE Loss:", mse_loss)
+    print("Eval MSE Loss:", mse_loss)
 
-
-
-from datetime import datetime, timedelta
-import pytz
-
-singapore_tz = pytz.timezone('Asia/Singapore')
-current_time = datetime.now(singapore_tz)
-adjusted_time = current_time - timedelta(minutes=9)
-timestamp = adjusted_time.strftime('%y%m%d_%H%M%S')
-
-base_path = '/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/'
-dir_path = os.path.join(base_path, timestamp)
-os.makedirs(dir_path, exist_ok=True)
-
-
-
-
-suffix = "diffuser_policy_10Hz_diffusion_steps_20"
-# save losses
-plt.plot(losses)
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.title('Training Loss')
-plt.savefig(dir_path + f'/diffuser_losses.png')
-plt.clf()  # Clear the current figure
-
-plt.plot(mse_losses)
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.title('Val MSE Loss')
-plt.savefig(dir_path + f'/val_mse_losses.png')
-
-# save the policy
-torch.save({
-    'cnn_model': policy.cnn_model.state_dict(),
-    'model': policy.model.state_dict(),
-    'normalizer': policy.normalizer.state_dict()
-}, dir_path + '/diffusion_policies_model.pth')
-
-print(f"Policy saved to {dir_path + '/diffusion_policies_backbone_model.pth'}")
-
-config_dst = os.path.join(dir_path, 'config.yaml')
-shutil.copyfile(config_path, config_dst)
