@@ -6,7 +6,7 @@ inspection_data : '/jackal_ws/src/mlda-barn-2024/inspection_data/kul_data_10Hz_d
 dataset_script_src: '/jackal_ws/src/mlda-barn-2024/train_imitation/scripts/KULBarnDataset.py'
 batch_size: 32
 learning_rate: 0.00011
-num_epochs: 50
+num_epochs: 80
 save_loss_every: 300 #record train loss every x batch
 validate_every: 10 #do val_loss every x epoch
 patience: 5

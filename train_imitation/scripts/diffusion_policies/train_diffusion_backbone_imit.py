@@ -145,10 +145,12 @@ plt.plot(losses)
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.title('Training Loss')
+plt.scatter(len(losses)-1, losses[-1], color='red', label=f"Last: {losses[-1]:.4f}")  # Highlight last point
 plt.savefig(dir_path + f'/diffuser_losses.png')
 plt.clf()  # Clear the current figure
 
 plt.plot(mse_losses)
+plt.scatter(len(mse_losses)-1, mse_losses[-1], color='red', label=f"Last: {mse_losses[-1]:.4f}")
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.title('Val MSE Loss')

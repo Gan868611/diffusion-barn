@@ -43,10 +43,13 @@ class CNNModel(nn.Module):
         non_lidar_batch_size = non_lidar.shape[:-2]
         if len(lidar.shape) > 3:
             if len(lidar.shape) == 4:
+                # print('reach here')
                 lidar = einops.rearrange(lidar, 'b n c l -> (b n) c l')
         # lidar = lidar.unsqueeze(1)  # Add channel dimension
+        
         feat = F.relu(self.act_fea_cv1(lidar))
         feat = F.relu(self.act_fea_cv2(feat))
+        
         feat = feat.view(feat.shape[0], -1)
         # print("feat shape: ", feat.shape)
         # print("non_lidar shape: ", non_lidar.shape)
@@ -54,8 +57,10 @@ class CNNModel(nn.Module):
         feat = torch.cat((feat, non_lidar.view(-1, non_lidar.shape[-1]*non_lidar.shape[-2])), dim=-1)
         feat = F.relu(self.fc1(feat))
         feat = self.fc2(feat)
-        feat = self.norm(feat)
+        # feat = self.norm(feat)
+        # print(feat.shape)
         feat = einops.rearrange(feat, '(b n) d -> b n d', b=lidar_batch_size[0])
+        # print(feat.shape)
         return feat
 
 

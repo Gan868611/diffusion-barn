@@ -2,7 +2,7 @@
 
 SINGLE_ENV_TRAIN_SIZE=3
 #world 254 and 282 always fail
-for j in $(seq 0 299); do
+for j in $(seq 283 299); do
     for ((i=0; i<SINGLE_ENV_TRAIN_SIZE; i++)); do
         echo "==== Running world $j ===="
         success=false

@@ -59,7 +59,10 @@ class KULBarnDiffusionDataset(BaseLowdimDataset):
             max_start = path_length - horizon
             for start in range(max_start + 1):  # Include the last possible starting point
                 end = start + horizon
-                indices.append(original_indices[start:end])
+                obs_indices = original_indices[start:end]  # Observations
+                action_indices = original_indices[start + horizon - 1: end + horizon - 1]  # Shifted Actions
+                if len(action_indices) == horizon:  # Ensure we have enough actions
+                    indices.append((obs_indices, action_indices))
         print("indices",indices[0])
         return indices
     
@@ -67,11 +70,12 @@ class KULBarnDiffusionDataset(BaseLowdimDataset):
         return len(self.indices)
     
     def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
-        curr_indices = self.indices[idx]
+        obs_indices, action_indices = self.indices[idx]
+        # print(self.lidar_data[0].shape)
         data = {
-            'lidar_data': self.lidar_data[curr_indices],
-            'non_lidar_data': self.non_lidar_data[curr_indices],
-            'action': self.actions_data[curr_indices],
+            'lidar_data': self.lidar_data[obs_indices],
+            'non_lidar_data': self.non_lidar_data[obs_indices],
+            'action': self.actions_data[action_indices],
         }
         torch_data = data
         return torch_data

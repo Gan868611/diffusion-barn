@@ -17,9 +17,10 @@ NFRAMES = 4  # Replace with the actual number of frames
 
 cnn_model = CNNModel(num_lidar_features=lidar_dim, num_non_lidar_features=non_lidar_dim, nframes=NFRAMES)
 def backward_hook(module, grad_input, grad_output):
-    print(f"Backward Hook - {module.__class__.__name__}:")
-    print(f"Grad Input: {grad_input}")
-    print(f"Grad Output: {grad_output}")
+    pass
+    # print(f"Backward Hook - {module.__class__.__name__}:")
+    # print(f"Grad Input: {grad_input}")
+    # print(f"Grad Output: {grad_output}")
 
 # Register the hook on a specific layer (e.g., self.fc1)
 cnn_model.fc1.register_full_backward_hook(backward_hook)

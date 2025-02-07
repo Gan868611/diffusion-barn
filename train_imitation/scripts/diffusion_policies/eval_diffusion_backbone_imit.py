@@ -26,8 +26,9 @@ from dataset.KULBarnDiffusionBackboneDataset import KULBarnDiffusionDataset
 from model.diffusion_policy_model_backbone import DiffusionModel
 from diffusers.optimization import get_cosine_schedule_with_warmup
 
-from omegaconf import OmegaConf
-filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/v2/"
+# from omegaconf import OmegaConf
+# filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/v2/"
+filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250206_201722/"
 config = OmegaConf.load(filepath + '/config.yaml')
 # filepath = base_path + "/diffuser_policy_10Hz_backbone_diffusion_steps_20.pth"
 model_path = filepath + '/diffusion_policies_model.pth'
