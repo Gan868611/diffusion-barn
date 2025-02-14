@@ -6,7 +6,7 @@ import sys
 
 # Add your path
 sys.path.append('/jackal_ws/src/mlda-barn-2024/train_imitation/diffusion_policy')
-from diffusion_policy.diffusion_unet_lowdim_policy_with_cnn1d_jd import DiffusionUnetLowdimPolicyWithCNN1D, CNNModel
+from diffusion_policy.diffusion_unet_image_policy import DiffusionUnetImagePolicy, CNNModel
 from diffusion_policy.model.diffusion.conditional_unet1d import ConditionalUnet1D
 from diffusion_policy.model.common.normalizer import LinearNormalizer
 
@@ -15,7 +15,7 @@ lidar_dim = 360 # Replace with the actual lidar dimension
 non_lidar_dim = 4  # Replace with the actual non-lidar dimension
 NFRAMES = 4  # Replace with the actual number of frames
 
-cnn_model = CNNModel(num_lidar_features=lidar_dim, num_non_lidar_features=non_lidar_dim, nframes=NFRAMES)
+cnn_model = CNNModel(num_lidar_features=lidar_dim, num_non_lidar_features=non_lidar_dim)
 def backward_hook(module, grad_input, grad_output):
     pass
     # print(f"Backward Hook - {module.__class__.__name__}:")
@@ -41,18 +41,17 @@ class DiffusionModel():
         total_params = sum(p.numel() for p in model.parameters()) + total_param
         print(f"Total parameters: {total_params}") # current param : 43,183,458
         noise_scheduler = DDPMScheduler(num_train_timesteps=config.diffusion_steps, beta_schedule='linear')
-        policy = DiffusionUnetLowdimPolicyWithCNN1D(
-            cnn_model=cnn_model,
-            model=model, 
+        policy = DiffusionUnetImagePolicy(
+            obs_encoder=cnn_model,
             noise_scheduler=noise_scheduler, 
-            horizon=config.horizon, 
+            horizon=config.horizon,
+            n_action_steps=config.n_action_steps, 
+            n_obs_steps=config.n_obs_steps,
+            num_inference_steps=config.num_inference_steps,
+            obs_as_global_cond=True,
             obs_dim=obs_dim, 
             action_dim=action_dim, 
-            n_obs_steps=1,
-            n_action_steps=config.horizon,
-            obs_as_global_cond=True,
-            oa_step_convention=False,
-            num_inference_steps=config.num_inference_steps
+            # oa_step_convention=False,  
         )
         
         normalizer = LinearNormalizer()

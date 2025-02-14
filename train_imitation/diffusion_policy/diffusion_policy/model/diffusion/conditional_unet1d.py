@@ -154,6 +154,8 @@ class ConditionalUnet1D(nn.Module):
                     cond_predict_scale=cond_predict_scale),
                 Upsample1d(dim_in) if not is_last else nn.Identity()
             ]))
+
+        # print("input dim: ", input_dim)
         
         final_conv = nn.Sequential(
             Conv1dBlock(start_dim, start_dim, kernel_size=kernel_size),
@@ -181,6 +183,7 @@ class ConditionalUnet1D(nn.Module):
         global_cond: (B,global_cond_dim)
         output: (B,T,input_dim)
         """
+        # print("sample: ", sample.shape)
         sample = einops.rearrange(sample, 'b h t -> b t h')
 
         # 1. time
@@ -236,7 +239,11 @@ class ConditionalUnet1D(nn.Module):
             x = resnet2(x, global_feature)
             x = upsample(x)
 
+        # print(f"Before final conv: {x.shape}")  # Expected: [batch, input_dim, T]
         x = self.final_conv(x)
+        # print(f"After final conv: {x.shape}")  # Expected: [batch, input_dim, T]
+
+        # x = self.final_conv(x)
 
         x = einops.rearrange(x, 'b t h -> b h t')
         return x

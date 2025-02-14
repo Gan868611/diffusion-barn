@@ -11,15 +11,78 @@ from diffusion_policy.model.diffusion.conditional_unet1d import ConditionalUnet1
 from diffusion_policy.model.diffusion.mask_generator import LowdimMaskGenerator
 from diffusion_policy.model.vision.multi_image_obs_encoder import MultiImageObsEncoder
 from diffusion_policy.common.pytorch_util import dict_apply
+import einops
+
+
+class CNNModel(nn.Module):
+    def __init__(self, num_lidar_features, num_non_lidar_features, output_dim=32, nframes=1):
+        super(CNNModel, self).__init__()
+        self.output_dim = output_dim
+        self.act_fea_cv1 = nn.Conv1d(
+            in_channels=nframes, out_channels=32, kernel_size=5, stride=2, padding=2, padding_mode='circular'
+        )
+        self.act_fea_cv2 = nn.Conv1d(
+            in_channels=32, out_channels=32, kernel_size=3, stride=2, padding=1, padding_mode='circular'
+        )
+
+        # conv_output_size = (num_lidar_features - 5 + 2*6) // 2 + 1  # Output size after self.act_fea_cv1
+        # conv_output_size = (conv_output_size - 3 + 2*1) // 2 + 1  # Output size after self.act_fea_cv2
+        # conv_output_size *= 32  # Multiply by the number of output channels
+        with torch.no_grad():
+            sample_input = torch.randn(1, nframes, num_lidar_features)
+            sample_output = self.act_fea_cv1(sample_input)
+            sample_output = self.act_fea_cv2(sample_output)
+            conv_output_size = sample_output.view(1, -1).shape[1]
+
+        # Calculate the output size of the CNN
+        self.fc1 = nn.Linear(conv_output_size + num_non_lidar_features*nframes, 64)
+        self.fc2 = nn.Linear(64, output_dim)
+        self.norm = nn.LayerNorm(output_dim)
+
+        torch.nn.init.xavier_uniform_(self.fc1.weight)
+        torch.nn.init.xavier_uniform_(self.fc2.weight)
+
+    def forward(self, obs):
+        obs = obs['obs']
+        lidar = obs[:, :360]
+        lidar = lidar.unsqueeze(1)
+        non_lidar = obs[:, 360:]
+        non_lidar = non_lidar.unsqueeze(1)
+        # print("check2:",non_lidar[0,0])
+        lidar_batch_size = lidar.shape[:-2]
+        non_lidar_batch_size = non_lidar.shape[:-2]
+        if len(lidar.shape) > 3:
+            if len(lidar.shape) == 4:
+                # print('reach here')
+                lidar = einops.rearrange(lidar, 'b n c l -> (b n) c l')
+        # lidar = lidar.unsqueeze(1)  # Add channel dimension
+        
+        feat = F.relu(self.act_fea_cv1(lidar))
+        feat = F.relu(self.act_fea_cv2(feat))
+        
+        feat = feat.view(feat.shape[0], -1)
+        # print("feat shape: ", feat.shape)
+        # print("non_lidar shape: ", non_lidar.shape)
+        # print("non_lidar shape: ",  non_lidar.view(-1, non_lidar.shape[-1]*non_lidar.shape[-2]).shape)
+        feat = torch.cat((feat, non_lidar.view(-1, non_lidar.shape[-1]*non_lidar.shape[-2])), dim=-1)
+        feat = F.relu(self.fc1(feat))
+        feat = self.fc2(feat)
+        # feat = self.norm(feat)
+        # print(feat.shape)
+        feat = einops.rearrange(feat, '(b n) d -> b n d', b=lidar_batch_size[0])
+        # print(feat.shape)
+        return feat
+
 
 class DiffusionUnetImagePolicy(BaseImagePolicy):
     def __init__(self, 
-            shape_meta: dict,
             noise_scheduler: DDPMScheduler,
-            obs_encoder: MultiImageObsEncoder,
+            obs_encoder: CNNModel,
             horizon, 
             n_action_steps, 
             n_obs_steps,
+            obs_dim, 
+            action_dim, 
             num_inference_steps=None,
             obs_as_global_cond=True,
             diffusion_step_embed_dim=256,
@@ -31,12 +94,8 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
             **kwargs):
         super().__init__()
 
-        # parse shapes
-        action_shape = shape_meta['action']['shape']
-        assert len(action_shape) == 1
-        action_dim = action_shape[0]
         # get feature dim
-        obs_feature_dim = obs_encoder.output_shape()[0]
+        obs_feature_dim = obs_dim
 
         # create diffusion model
         input_dim = action_dim + obs_feature_dim
@@ -58,6 +117,7 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
 
         self.obs_encoder = obs_encoder
         self.model = model
+        self.cnn_model = obs_encoder
         self.noise_scheduler = noise_scheduler
         self.mask_generator = LowdimMaskGenerator(
             action_dim=action_dim,
@@ -126,8 +186,13 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
         result: must include "action" key
         """
         assert 'past_action' not in obs_dict # not implemented yet
+
         # normalize input
-        nobs = self.normalizer.normalize(obs_dict)
+        nlidar_data = self.normalizer['lidar_data'].normalize(obs_dict['lidar_data'])
+        nnonlidar_data = self.normalizer['non_lidar_data'].normalize(obs_dict['non_lidar_data'])
+        # batch, horizon, 360+4
+        nobs = {'obs': torch.cat([nlidar_data, nnonlidar_data], dim=-1)}
+        # nobs = self.normalizer.normalize(obs_dict)
         value = next(iter(nobs.values()))
         B, To = value.shape[:2]
         T = self.horizon
@@ -145,6 +210,7 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
         if self.obs_as_global_cond:
             # condition through global feature
             this_nobs = dict_apply(nobs, lambda x: x[:,:To,...].reshape(-1,*x.shape[2:]))
+            # print(this_nobs['obs'].shape)
             nobs_features = self.obs_encoder(this_nobs)
             # reshape back to B, Do
             global_cond = nobs_features.reshape(B, -1)
@@ -171,31 +237,42 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
             **self.kwargs)
         
         # unnormalize prediction
+        # batch , horizon, action_dim
         naction_pred = nsample[...,:Da]
+        # print("naction_pred: ", naction_pred.shape)
         action_pred = self.normalizer['action'].unnormalize(naction_pred)
 
         # get action
+        #nobs_step - 1
         start = To - 1
         end = start + self.n_action_steps
         action = action_pred[:,start:end]
+        # print("start", start, 'end',end,action.shape  )
         
         result = {
             'action': action,
             'action_pred': action_pred
         }
+        # print("action:", action.shape, action_pred.shape)
         return result
 
     # ========= training  ============
     def set_normalizer(self, normalizer: LinearNormalizer):
         self.normalizer.load_state_dict(normalizer.state_dict())
+        # print(self.normalizer)
 
     def compute_loss(self, batch):
-        # print(batch['obs'].shape)
-
         # normalize input
         assert 'valid_mask' not in batch
-        nobs = self.normalizer.normalize(batch['obs'])
+        nlidar_data = self.normalizer['lidar_data'].normalize(batch['lidar_data'])
+        nnonlidar_data = self.normalizer['non_lidar_data'].normalize(batch['non_lidar_data'])
+        # batch, horizon, 360+4
+        nobs = {'obs': torch.cat([nlidar_data, nnonlidar_data], dim=-1)}
+        # print(nobs['obs'][0][0][-4])
+        print("nobs:", nobs['obs'].shape)
+
         nactions = self.normalizer['action'].normalize(batch['action'])
+        print("nactions:", nactions.shape)
         batch_size = nactions.shape[0]
         horizon = nactions.shape[1]
 
@@ -208,6 +285,7 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
             # reshape B, T, ... to B*T
             this_nobs = dict_apply(nobs, 
                 lambda x: x[:,:self.n_obs_steps,...].reshape(-1,*x.shape[2:]))
+            # print(this_nobs['obs'].shape)
             nobs_features = self.obs_encoder(this_nobs)
             # reshape back to B, Do
             global_cond = nobs_features.reshape(batch_size, -1)
@@ -235,6 +313,7 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
         # (this is the forward diffusion process)
         noisy_trajectory = self.noise_scheduler.add_noise(
             trajectory, noise, timesteps)
+        print("noisy_traj", noisy_trajectory.shape)
         
         # compute loss mask
         loss_mask = ~condition_mask
@@ -247,12 +326,15 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
             local_cond=local_cond, global_cond=global_cond)
 
         pred_type = self.noise_scheduler.config.prediction_type 
+        # print("pred_typpe:", pred_type)
         if pred_type == 'epsilon':
             target = noise
         elif pred_type == 'sample':
             target = trajectory
         else:
             raise ValueError(f"Unsupported prediction type {pred_type}")
+    
+        print("pred:", pred.shape, " target:", target.shape)
 
         loss = F.mse_loss(pred, target, reduction='none')
         loss = loss * loss_mask.type(loss.dtype)

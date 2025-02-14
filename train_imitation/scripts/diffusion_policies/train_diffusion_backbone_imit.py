@@ -115,7 +115,7 @@ for epoch in range(num_epochs):
                 obs_dict = {'lidar_data': batch['lidar_data'].to(device), 'non_lidar_data': batch['non_lidar_data'].to(device)}
                 pred = policy.predict_action(obs_dict)['action_pred']  #[batch, horizon, action_dim]
                 # print(pred.shape)
-                mse_loss = F.mse_loss(pred[:,0,:], batch['action'][:,0,:].to(device))
+                mse_loss = F.mse_loss(pred[:,0,:], batch['action'][:,config.n_obs_steps - 1,:].to(device))
                 total_mse_losses += mse_loss.item()  
             mse_loss = total_mse_losses / len(val_dataloader)
             mse_losses.append(mse_loss)
@@ -146,6 +146,7 @@ plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.title('Training Loss')
 plt.scatter(len(losses)-1, losses[-1], color='red', label=f"Last: {losses[-1]:.4f}")  # Highlight last point
+plt.legend()
 plt.savefig(dir_path + f'/diffuser_losses.png')
 plt.clf()  # Clear the current figure
 
@@ -154,6 +155,7 @@ plt.scatter(len(mse_losses)-1, mse_losses[-1], color='red', label=f"Last: {mse_l
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.title('Val MSE Loss')
+plt.legend()
 plt.savefig(dir_path + f'/val_mse_losses.png')
 
 # save the policy
