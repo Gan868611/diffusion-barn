@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange, reduce
 from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
+# from diffusers.schedulers.scheduling_ddim import DDIMScheduler
 
 from diffusion_policy.model.common.normalizer import LinearNormalizer
 from diffusion_policy.policy.base_image_policy import BaseImagePolicy
@@ -250,7 +251,7 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
         # print("start", start, 'end',end,action.shape  )
         
         result = {
-            'action': action,
+            'action': action, #slice of action_pred
             'action_pred': action_pred
         }
         # print("action:", action.shape, action_pred.shape)
@@ -269,10 +270,10 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
         # batch, horizon, 360+4
         nobs = {'obs': torch.cat([nlidar_data, nnonlidar_data], dim=-1)}
         # print(nobs['obs'][0][0][-4])
-        print("nobs:", nobs['obs'].shape)
+        # print("nobs:", nobs['obs'].shape)
 
         nactions = self.normalizer['action'].normalize(batch['action'])
-        print("nactions:", nactions.shape)
+        # print("nactions:", nactions.shape)
         batch_size = nactions.shape[0]
         horizon = nactions.shape[1]
 
@@ -313,7 +314,7 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
         # (this is the forward diffusion process)
         noisy_trajectory = self.noise_scheduler.add_noise(
             trajectory, noise, timesteps)
-        print("noisy_traj", noisy_trajectory.shape)
+        # print("noisy_traj", noisy_trajectory.shape)
         
         # compute loss mask
         loss_mask = ~condition_mask
@@ -334,7 +335,7 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
         else:
             raise ValueError(f"Unsupported prediction type {pred_type}")
     
-        print("pred:", pred.shape, " target:", target.shape)
+        # print("pred:", pred.shape, " target:", target.shape)
 
         loss = F.mse_loss(pred, target, reduction='none')
         loss = loss * loss_mask.type(loss.dtype)

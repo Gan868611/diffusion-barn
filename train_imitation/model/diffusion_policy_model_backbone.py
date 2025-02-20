@@ -2,6 +2,7 @@
 import torch
 import time 
 from diffusers.schedulers.scheduling_ddpm import DDPMScheduler
+from diffusers.schedulers.scheduling_ddim import DDIMScheduler
 import sys
 
 # Add your path
@@ -40,7 +41,12 @@ class DiffusionModel():
         model = ConditionalUnet1D(input_dim=action_dim, global_cond_dim=obs_dim, cond_predict_scale=True)
         total_params = sum(p.numel() for p in model.parameters()) + total_param
         print(f"Total parameters: {total_params}") # current param : 43,183,458
-        noise_scheduler = DDPMScheduler(num_train_timesteps=config.diffusion_steps, beta_schedule='linear')
+        if config.noise_scheduler == 'ddpm':
+            print("DDPM")
+            noise_scheduler = DDPMScheduler(num_train_timesteps=config.diffusion_steps, beta_schedule='squaredcos_cap_v2')
+        else:
+            print("DDIM")
+            noise_scheduler = DDIMScheduler(num_train_timesteps=config.diffusion_steps, beta_schedule='squaredcos_cap_v2')
         policy = DiffusionUnetImagePolicy(
             obs_encoder=cnn_model,
             noise_scheduler=noise_scheduler, 
@@ -86,7 +92,7 @@ class DiffusionModel():
 
     def __call__(self, lidar, non_lidar):
         obs_dict = {'lidar_data': lidar.to(self.device), 'non_lidar_data': non_lidar.to(self.device)}
-        return self.policy.predict_action(obs_dict)['action_pred']
+        return self.policy.predict_action(obs_dict)['action']
 
 if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

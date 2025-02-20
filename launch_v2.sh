@@ -20,8 +20,10 @@ fi
 if [ $# -eq 0 ]; then
     # echo "Image: mldarobotics/barn2024:zhenyangv1"
     # IMAGE_NAME="mldarobotics/barn2024:zhenyangv1"
-    echo "Image: mldarobotics/barn2024:zhenyangv2_cuda"
-    IMAGE_NAME="mldarobotics/barn2024:zhenyangv2_cuda"
+    # echo "Image: mldarobotics/barn2024:zhenyangv2_cuda"
+    # IMAGE_NAME="mldarobotics/barn2024:zhenyangv2_cuda"
+    echo "Image: mldarobotics/barn2024:zhenyangv3_cuda"
+    IMAGE_NAME="mldarobotics/barn2024:zhenyangv3_cuda"
 
 else
     IMAGE_NAME="$1"
@@ -32,7 +34,7 @@ echo "Display:$DISPLAY"
 # export ROS_REMOTE_PC=$(ifconfig ens10f0 | awk '/inet / {print $2}') #replace enp70s0 with your network card
 # export ROS_PORT=11311
 
-docker run --rm -dit --name barn-v2 \
+docker run --rm -dit --name barn-v3 \
 	--gpus all \
 	-e DISPLAY=$DISPLAY \
 	-e QT_X11_NO_MITSHM=1 \

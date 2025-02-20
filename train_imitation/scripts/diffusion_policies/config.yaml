@@ -12,9 +12,10 @@ num_epochs: 80
 save_loss_every: 300 #record train loss every x batch
 validate_every: 10 #do val_loss every x epoch
 patience: 5
-diffusion_steps: 100
-suffix: 'diffuser_policy_10Hz_diffusion_steps_20'
-num_inference_steps: 100      #reduce diffusion steps for inference
+diffusion_steps: 1000
+suffix: 'diffuser_policy_10Hz_ddim'
+num_inference_steps: 2      #reduce diffusion steps for inference
+noise_scheduler: ddim
 
 #Testing
 model_path : '/jackal_ws/src/mlda-barn-2024/outputs/behavior_cloning_cnn/241219_133715/cnn_model.pth'

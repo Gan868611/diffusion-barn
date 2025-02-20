@@ -84,7 +84,7 @@ Run the notebook `train_imitation/behavior-cloning.ipynb`
 
 ## Test on environment
 ```shell
-python run_rviz_kul.py --world_idx 285
+python ./scripts/run_rviz_kul.py --world_idx 285
 python ./scripts/run_rviz_imit.py --world_idx 285
 python scripts/eval_imit.py
 

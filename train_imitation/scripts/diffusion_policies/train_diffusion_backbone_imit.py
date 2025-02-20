@@ -86,6 +86,21 @@ validate_every = config.validate_every
 total_loss = 0
 count = 0
 
+from datetime import datetime, timedelta
+import pytz
+
+singapore_tz = pytz.timezone('Asia/Singapore')
+current_time = datetime.now(singapore_tz)
+adjusted_time = current_time - timedelta(minutes=9)
+timestamp = adjusted_time.strftime('%y%m%d_%H%M%S')
+
+base_path = '/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/'
+dir_path = os.path.join(base_path, timestamp)
+os.makedirs(dir_path, exist_ok=True)
+
+config_dst = os.path.join(dir_path, 'config.yaml')
+shutil.copyfile(config_path, config_dst)
+
 optimizer = optim.Adam(list(policy.model.parameters()) + list(policy.cnn_model.parameters()), lr=config.learning_rate)
 scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=500, num_training_steps=num_epochs * len(train_dataloader))
 policy.model.train()
@@ -115,7 +130,7 @@ for epoch in range(num_epochs):
                 obs_dict = {'lidar_data': batch['lidar_data'].to(device), 'non_lidar_data': batch['non_lidar_data'].to(device)}
                 pred = policy.predict_action(obs_dict)['action_pred']  #[batch, horizon, action_dim]
                 # print(pred.shape)
-                mse_loss = F.mse_loss(pred[:,0,:], batch['action'][:,config.n_obs_steps - 1,:].to(device))
+                mse_loss = F.mse_loss(pred[:,config.n_obs_steps - 1,:], batch['action'][:,config.n_obs_steps - 1,:].to(device))
                 total_mse_losses += mse_loss.item()  
             mse_loss = total_mse_losses / len(val_dataloader)
             mse_losses.append(mse_loss)
@@ -124,22 +139,7 @@ for epoch in range(num_epochs):
 
 
 
-from datetime import datetime, timedelta
-import pytz
 
-singapore_tz = pytz.timezone('Asia/Singapore')
-current_time = datetime.now(singapore_tz)
-adjusted_time = current_time - timedelta(minutes=9)
-timestamp = adjusted_time.strftime('%y%m%d_%H%M%S')
-
-base_path = '/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/'
-dir_path = os.path.join(base_path, timestamp)
-os.makedirs(dir_path, exist_ok=True)
-
-
-
-
-suffix = "diffuser_policy_10Hz_diffusion_steps_20"
 # save losses
 plt.plot(losses)
 plt.xlabel('Epoch')
@@ -167,5 +167,3 @@ torch.save({
 
 print(f"Policy saved to {dir_path + '/diffusion_policies_backbone_model.pth'}")
 
-config_dst = os.path.join(dir_path, 'config.yaml')
-shutil.copyfile(config_path, config_dst)
