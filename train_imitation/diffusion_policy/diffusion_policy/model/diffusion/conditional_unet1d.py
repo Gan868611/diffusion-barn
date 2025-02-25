@@ -68,16 +68,18 @@ class ConditionalResidualBlock1D(nn.Module):
 
 class ConditionalUnet1D(nn.Module):
     def __init__(self, 
-        input_dim,
+        input_dim, #action dim  = 2
         local_cond_dim=None,
         global_cond_dim=None,
         diffusion_step_embed_dim=256,
-        down_dims=[256,512,1024],
+        dims_multiplier = 128,
+        down_dims=[2,4,8], # 2,4,8
         kernel_size=3,
         n_groups=8,
         cond_predict_scale=False
         ):
         super().__init__()
+        down_dims = [dim * dims_multiplier for dim in down_dims]
         all_dims = [input_dim] + list(down_dims)
         start_dim = down_dims[0]
 
@@ -93,6 +95,7 @@ class ConditionalUnet1D(nn.Module):
             cond_dim += global_cond_dim
 
         in_out = list(zip(all_dims[:-1], all_dims[1:]))
+        print("in_out dim: ", in_out)
 
         local_cond_encoder = None
         if local_cond_dim is not None:

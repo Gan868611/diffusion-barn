@@ -87,7 +87,8 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
             num_inference_steps=None,
             obs_as_global_cond=True,
             diffusion_step_embed_dim=256,
-            down_dims=(256,512,1024),
+            dims_multiplier=128,
+            down_dims=(2,4,8),
             kernel_size=5,
             n_groups=8,
             cond_predict_scale=True,
@@ -110,11 +111,18 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
             local_cond_dim=None,
             global_cond_dim=global_cond_dim,
             diffusion_step_embed_dim=diffusion_step_embed_dim,
+            dims_multiplier=dims_multiplier,
             down_dims=down_dims,
             kernel_size=kernel_size,
             n_groups=n_groups,
             cond_predict_scale=cond_predict_scale
         )
+
+        #TODO
+        total_param = sum(p.numel() for p in obs_encoder.parameters())
+        print(f"CNN parameters: {total_param}")
+        total_params = sum(p.numel() for p in model.parameters()) + total_param
+        print(f"Total parameters: {total_params}") # current param : 43,183,458 for dims_mul = 128
 
         self.obs_encoder = obs_encoder
         self.model = model
@@ -135,6 +143,7 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
         self.n_obs_steps = n_obs_steps
         self.obs_as_global_cond = obs_as_global_cond
         self.kwargs = kwargs
+        
 
         if num_inference_steps is None:
             num_inference_steps = noise_scheduler.config.num_train_timesteps

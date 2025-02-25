@@ -26,7 +26,6 @@ def backward_hook(module, grad_input, grad_output):
 # Register the hook on a specific layer (e.g., self.fc1)
 cnn_model.fc1.register_full_backward_hook(backward_hook)
 
-total_param = sum(p.numel() for p in cnn_model.parameters())
 
 
 obs_dim = cnn_model.output_dim
@@ -37,16 +36,15 @@ class DiffusionModel():
     def __init__(self, config, filepath=None,):
         print("Python version:", sys.version)
         print("PyTorch version:", torch.__version__)
-        #TODO
-        model = ConditionalUnet1D(input_dim=action_dim, global_cond_dim=obs_dim, cond_predict_scale=True)
-        total_params = sum(p.numel() for p in model.parameters()) + total_param
-        print(f"Total parameters: {total_params}") # current param : 43,183,458
+
         if config.noise_scheduler == 'ddpm':
             print("DDPM")
             noise_scheduler = DDPMScheduler(num_train_timesteps=config.diffusion_steps, beta_schedule='squaredcos_cap_v2')
         else:
             print("DDIM")
             noise_scheduler = DDIMScheduler(num_train_timesteps=config.diffusion_steps, beta_schedule='squaredcos_cap_v2')
+
+        dims_multiplier = getattr(config, 'dims_multiplier', 128)
         policy = DiffusionUnetImagePolicy(
             obs_encoder=cnn_model,
             noise_scheduler=noise_scheduler, 
@@ -56,7 +54,8 @@ class DiffusionModel():
             num_inference_steps=config.num_inference_steps,
             obs_as_global_cond=True,
             obs_dim=obs_dim, 
-            action_dim=action_dim, 
+            action_dim=action_dim,
+            dims_multiplier=dims_multiplier 
             # oa_step_convention=False,  
         )
         

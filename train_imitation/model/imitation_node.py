@@ -64,8 +64,8 @@ class ROSNode:
         # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/v2/"
         # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250206_201722/"
         # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250217_162556" # ddim train 10, inf 10
-        # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250217_151935" # ddim train 20 inf 20
-        filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250219_192112"
+        filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250219_192112_v3" 
+        # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250219_192112" #ddim 1000/2
 
         if model_arch == "transformer":
             config_dict = easydict.EasyDict({
@@ -112,6 +112,7 @@ class ROSNode:
         self.v = 0
         self.w = 0
         self.start_time = 0
+        self.inference_times = []
 
         # with open('/jackal_ws/src/mlda-barn-2024/train_imitation/model/scaler_params.json', 'r') as f:
         #     self.scaler_params = json.load(f)
@@ -171,12 +172,15 @@ class ROSNode:
             elif model_arch == "diffusion":
                 actions = self.model(self.tensor_lidar, self.tensor_non_lidar)
                 actions = actions.squeeze()
-            print("Time taken for inference: {0}".format(time.time() - self.start_time))
+            self.inference_times.append(time.time() - self.start_time)
+            print("Average Time taken for inference: {0}".format(np.mean(self.inference_times[5:])))
             # print(actions.shape)
             
             self.v, self.w = actions[0][0].item(), actions[0][1].item()
 
-            self.vel.linear.x = self.v
+            self.vel.linear.x = max(0, min(self.v, 3))
+
+            # self.vel.linear.x = 3
             self.vel.angular.z = self.w
 
 

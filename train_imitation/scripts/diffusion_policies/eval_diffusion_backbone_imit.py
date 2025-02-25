@@ -28,7 +28,7 @@ from diffusers.optimization import get_cosine_schedule_with_warmup
 
 # from omegaconf import OmegaConf
 # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/v2/"
-filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250207_193511/"
+filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250219_192112_v3/"
 config = OmegaConf.load(filepath + '/config.yaml')
 # filepath = base_path + "/diffuser_policy_10Hz_backbone_diffusion_steps_20.pth"
 model_path = filepath + '/diffusion_policies_model.pth'
@@ -104,11 +104,11 @@ policy.cnn_model.eval()
 
 with torch.no_grad():
     total_mse_losses = 0
-    for batch in tqdm(test_dataloader):
+    for batch in tqdm(val_dataloader):
         obs_dict = {'lidar_data': batch['lidar_data'].to(device), 'non_lidar_data': batch['non_lidar_data'].to(device)}
         pred = policy.predict_action(obs_dict)['action']  #[batch, horizon, action_dim]
         # print(pred.shape)
-        mse_loss = F.mse_loss(pred[:,0,:], batch['action'][:,config.n_obs_steps - 1,:].to(device))
+        mse_loss = F.mse_loss(pred[:,config.n_obs_steps - 1,:], batch['action'][:,config.n_obs_steps - 1,:].to(device))
         total_mse_losses += mse_loss.item()  
     mse_loss = total_mse_losses / len(val_dataloader)
     mse_losses.append(mse_loss)

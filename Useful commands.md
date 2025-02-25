@@ -86,7 +86,7 @@ Run the notebook `train_imitation/behavior-cloning.ipynb`
 ```shell
 python ./scripts/run_rviz_kul.py --world_idx 285
 python ./scripts/run_rviz_imit.py --world_idx 285
-python scripts/eval_imit.py
+python ./scripts/eval_imit.py
 
 python scripts/get_data_score.py # To get the score of the imitation model
 ```

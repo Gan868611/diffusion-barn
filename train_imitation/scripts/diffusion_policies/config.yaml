@@ -12,9 +12,10 @@ num_epochs: 80
 save_loss_every: 300 #record train loss every x batch
 validate_every: 10 #do val_loss every x epoch
 patience: 5
+dims_multiplier: 128 #base dim [2 , 4 , 8] * mul = 
 diffusion_steps: 1000
 suffix: 'diffuser_policy_10Hz_ddim'
-num_inference_steps: 2      #reduce diffusion steps for inference
+num_inference_steps: 5      #reduce diffusion steps for inference
 noise_scheduler: ddim
 
 #Testing
