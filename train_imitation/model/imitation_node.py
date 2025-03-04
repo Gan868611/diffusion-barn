@@ -60,12 +60,12 @@ class ROSNode:
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print("Node at: " , self.device)
         self.look_ahead = 1.0
-        # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/behavior_cloning_cnn/250103_092743/cnn_model.pth"
+        # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/behavior_cloning_cnn/v1/cnn_model.pth"
         # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/v2/"
         # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250206_201722/"
         # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250217_162556" # ddim train 10, inf 10
-        filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250219_192112_v3" 
-        # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250219_192112" #ddim 1000/2
+        # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250219_192112_v3" 
+        filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250220_183739_m16" #ddim 1000/2
 
         if model_arch == "transformer":
             config_dict = easydict.EasyDict({
@@ -173,7 +173,7 @@ class ROSNode:
                 actions = self.model(self.tensor_lidar, self.tensor_non_lidar)
                 actions = actions.squeeze()
             self.inference_times.append(time.time() - self.start_time)
-            print("Average Time taken for inference: {0}".format(np.mean(self.inference_times[5:])))
+            print("Average Time taken for inference: {0}".format(np.mean(self.inference_times[-10:])))
             # print(actions.shape)
             
             self.v, self.w = actions[0][0].item(), actions[0][1].item()

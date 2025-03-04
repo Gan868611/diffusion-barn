@@ -2,7 +2,7 @@
 import pandas as pd
 
 # Define the file path
-file_path = '/jackal_ws/src/mlda-barn-2024/imit_ddim_1000_5_m128_out.txt'
+file_path = '/jackal_ws/src/mlda-barn-2024/imit_val_ddim_1000_5_m16.txt'
 # Read the data into a DataFrame
 df = pd.read_csv(file_path, sep=" ", header=None)
 

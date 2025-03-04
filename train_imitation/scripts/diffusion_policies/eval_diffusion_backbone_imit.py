@@ -53,6 +53,7 @@ non_test_ids = np.setdiff1d(world_ids, test_ids)
 train_evals = [id for id in world_ids if id not in test_ids]
 train_ids = np.random.choice(non_test_ids, int(train_ratio * len(non_test_ids)), replace=False)
 val_ids = np.setdiff1d(non_test_ids, train_ids)
+# print(val_ids)
 
 train_df = df[df['world_idx'].isin(train_ids)]
 val_df = df[df['world_idx'].isin(val_ids)]

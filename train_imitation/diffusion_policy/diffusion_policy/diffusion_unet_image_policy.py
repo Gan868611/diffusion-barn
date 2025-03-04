@@ -143,7 +143,7 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
         self.n_obs_steps = n_obs_steps
         self.obs_as_global_cond = obs_as_global_cond
         self.kwargs = kwargs
-        
+        self.prev_trajectory = None
 
         if num_inference_steps is None:
             num_inference_steps = noise_scheduler.config.num_train_timesteps
@@ -165,9 +165,20 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
             dtype=condition_data.dtype,
             device=condition_data.device,
             generator=generator)
-    
+        
         # set step values
         scheduler.set_timesteps(self.num_inference_steps)
+
+        if self.prev_trajectory != None:
+            noise = torch.randn(trajectory.shape, device=trajectory.device)
+            trajectory = self.prev_trajectory.clone()
+            # print("traj shape: ",trajectory.shape)
+            trajectory[:,:-1,:] = self.prev_trajectory[:,1:,:].clone() # [1,2,3,4] -> [2,3,4,4]
+            # print("traj shape: ",trajectory.shape)
+            # print(self.num_inference_steps, torch.IntTensor(self.num_inference_steps).long())
+
+            trajectory = self.noise_scheduler.add_noise(
+                trajectory, noise, torch.tensor(self.num_inference_steps).long())
 
         for t in scheduler.timesteps:
             # 1. apply conditioning
@@ -185,7 +196,9 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
                 ).prev_sample
         
         # finally make sure conditioning is enforced
-        trajectory[condition_mask] = condition_data[condition_mask]        
+        trajectory[condition_mask] = condition_data[condition_mask]     
+        #prev_traj
+        # self.prev_trajectory = trajectory.clone()       
 
         return trajectory
 
