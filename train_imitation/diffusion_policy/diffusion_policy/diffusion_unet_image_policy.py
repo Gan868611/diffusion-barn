@@ -14,6 +14,10 @@ from diffusion_policy.model.vision.multi_image_obs_encoder import MultiImageObsE
 from diffusion_policy.common.pytorch_util import dict_apply
 import einops
 
+torch.manual_seed(3)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
 
 class CNNModel(nn.Module):
     def __init__(self, num_lidar_features, num_non_lidar_features, output_dim=32, nframes=1):

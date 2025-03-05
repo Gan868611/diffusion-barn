@@ -11,12 +11,12 @@ val_ids = [1, 2, 3, 9, 23, 26, 27, 33, 36, 42, 47, 62, 68, 76, 78, 83, 87, 99,
            234, 239, 248, 249, 251, 253, 281, 283, 284, 293, 298, 299]
 
 RETRIES = 1
-for j in val_ids:
-# for j in range(270, 300, 5):
+# for j in val_ids:
+for j in range(0, 300, 5):
     print(f"==== Running world {j} ====")
     for attempt in range(RETRIES):  # Retry up to 3 times
         print(f"==== Attempt {attempt + 1} ====")
-        result = subprocess.run(["python", "./scripts/run_rviz_imit.py", "--world_idx", str(j), "--out", "imit_val_ddim_1000_5_m16.txt"])
+        result = subprocess.run(["python", "./scripts/run_rviz_imit.py", "--world_idx", str(j), "--out", "imit_ddim_1000_5_m4.txt"])
         # if result.returncode == 200:  # Break the loop if the return code is 200
         #     print("==== Success ====")
         #     break
