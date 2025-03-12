@@ -202,7 +202,7 @@ class DiffusionUnetImagePolicy(BaseImagePolicy):
         # finally make sure conditioning is enforced
         trajectory[condition_mask] = condition_data[condition_mask]     
         #prev_traj
-        # self.prev_trajectory = trajectory.clone()       
+        self.prev_trajectory = trajectory.clone()       
 
         return trajectory
 

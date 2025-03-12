@@ -16,7 +16,21 @@ for j in range(0, 300, 5):
     print(f"==== Running world {j} ====")
     for attempt in range(RETRIES):  # Retry up to 3 times
         print(f"==== Attempt {attempt + 1} ====")
-        result = subprocess.run(["python", "./scripts/run_rviz_imit.py", "--world_idx", str(j), "--out", "imit_ddim_1000_5_m4.txt"])
+        result = subprocess.run(["python", "./scripts/run_rviz_imit.py", "--world_idx", str(j), "--out", "imit_ddim_1000_2_m128_prev_traj.txt"])
+        # if result.returncode == 200:  # Break the loop if the return code is 200
+        #     print("==== Success ====")
+        #     break
+        # print(f"Attempt {attempt + 1}, retrying...")
+        time.sleep(1)
+
+    print(f"==== Done with world {j} ====")
+
+for j in val_ids:
+# for j in range(0, 300, 5):
+    print(f"==== Running world {j} ====")
+    for attempt in range(RETRIES):  # Retry up to 3 times
+        print(f"==== Attempt {attempt + 1} ====")
+        result = subprocess.run(["python", "./scripts/run_rviz_imit.py", "--world_idx", str(j), "--out", "imit_ddim_1000_2_m128_prev_traj.txt"])
         # if result.returncode == 200:  # Break the loop if the return code is 200
         #     print("==== Success ====")
         #     break

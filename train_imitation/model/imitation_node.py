@@ -65,7 +65,7 @@ class ROSNode:
         # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250206_201722/"
         # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250217_162556" # ddim train 10, inf 10
         # filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250219_192112_v3" 
-        filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250220_183913_m4" #ddim 1000/2
+        filepath = "/jackal_ws/src/mlda-barn-2024/outputs/diffusion_policies_backbone/250219_192112_v3" #ddim 1000/2
 
         if model_arch == "transformer":
             config_dict = easydict.EasyDict({

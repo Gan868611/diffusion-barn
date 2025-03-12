@@ -107,7 +107,7 @@ with torch.no_grad():
     total_mse_losses = 0
     for batch in tqdm(val_dataloader):
         obs_dict = {'lidar_data': batch['lidar_data'].to(device), 'non_lidar_data': batch['non_lidar_data'].to(device)}
-        pred = policy.predict_action(obs_dict)['action']  #[batch, horizon, action_dim]
+        pred = policy.predict_action(obs_dict)['action_pred']  #[batch, horizon, action_dim]
         # print(pred.shape)
         mse_loss = F.mse_loss(pred[:,config.n_obs_steps - 1,:], batch['action'][:,config.n_obs_steps - 1,:].to(device))
         total_mse_losses += mse_loss.item()  
